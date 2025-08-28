@@ -1,0 +1,32 @@
+mutation SeedData @auth(level: USER) {
+  user_insertMany(data: [
+    {
+      displayName: "Bob User",
+      email: "bob@example.com"
+    },
+    {
+      displayName: "Jane User",
+      email: "jane@example.com"
+    }
+  ])
+  taskList_insertMany(data: [
+    {
+      name: "Bob's Tasks",
+      description: "Task list for Bob"
+    },
+    {
+      name: "Jane's Tasks",
+      description: "Task list for Jane"
+    }
+  ])
+  task_insertMany(data: [
+    {
+      title: "Grocery Shopping",
+      status: "Incomplete"
+    },
+    {
+      title: "Laundry",
+      status: "Complete"
+    }
+  ])
+}

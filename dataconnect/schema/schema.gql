@@ -1,0 +1,50 @@
+type User @table {
+  displayName: String!
+  createdAt: Timestamp!
+  email: String
+  photoUrl: String
+}
+
+type Task @table {
+  user: User!
+  title: String!
+  status: String!
+  createdAt: Timestamp!
+  description: String
+  dueDate: Timestamp
+  priority: String
+  completedAt: Timestamp
+}
+
+type Tag @table {
+  user: User!
+  name: String!
+  createdAt: Timestamp!
+}
+
+type TaskTag @table(key: ["task", "tag"]) {
+  task: Task!
+  tag: Tag!
+  createdAt: Timestamp!
+}
+
+type TaskList @table {
+  user: User!
+  name: String!
+  createdAt: Timestamp!
+  description: String
+}
+
+type TaskListTask @table(key: ["taskList", "task"]) {
+  taskList: TaskList!
+  task: Task!
+  position: Int!
+  createdAt: Timestamp!
+}
+
+type SharedTaskList @table(key: ["taskList", "user"]) {
+  taskList: TaskList!
+  user: User!
+  permissionLevel: String!
+  sharedAt: Timestamp!
+}

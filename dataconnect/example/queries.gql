@@ -1,0 +1,30 @@
+mutation CreateTask($title: String!, $status: String!, $userId: UUID!) @auth(level: USER) {
+  task_insert(data: {
+    title: $title,
+    status: $status,
+    userId: $userId
+  })
+}
+
+query ListTasksByUser($userId: UUID!) @auth(level: USER) {
+  tasks(where: {
+    userId: {
+      eq: $userId
+    }
+  }) {
+    id
+    title
+    status
+    description
+  }
+}
+
+mutation UpdateTaskStatus($id: UUID!, $status: String!) @auth(level: USER) {
+  task_update(key: {id: $id}, data: {
+    status: $status
+  })
+}
+
+mutation DeleteTask($id: UUID!) @auth(level: USER) {
+  task_delete(key: {id: $id})
+}
