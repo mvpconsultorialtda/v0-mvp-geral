@@ -1,7 +1,11 @@
 
 import * as admin from 'firebase-admin';
 
-const serviceAccount = require('../../serviceAccountKey.json');
+if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set.');
+}
+
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 
 if (!admin.apps.length) {
   try {
