@@ -25,7 +25,22 @@ export default function TodoListPage() {
     byCategory: {},
   })
   const [categories, setCategories] = useState<string[]>([])
+  const [isLoaded, setIsLoaded] = useState(false);
 
+  // Function to sync local state with the backend
+  const syncWithBackend = async () => {
+    const dataToSave = todoList.core.exportToJSON();
+    try {
+      await fetch('/api/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: dataToSave,
+      });
+    } catch (error) {
+      console.error("Failed to sync with backend", error);
+    }
+  };
+  
   const loadTodos = () => {
     const filteredTodos = todoList.core.getTodos(filter)
     const allStats = todoList.core.getStats()
@@ -36,13 +51,38 @@ export default function TodoListPage() {
     setCategories(allCategories)
   }
 
+  // Fetch initial data from API on component mount
   useEffect(() => {
-    loadTodos()
-  }, [filter])
+    const fetchInitialData = async () => {
+      try {
+        const response = await fetch('/api/todos');
+        if (response.ok) {
+          const data = await response.json();
+          if (data && (data.todos.length > 0 || data.categories.length > 0)) {
+            todoList.core.importFromJSON(JSON.stringify(data));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch todos:", error);
+      } finally {
+        setIsLoaded(true);
+        loadTodos(); // Initial load after fetching
+      }
+    };
+
+    fetchInitialData();
+  }, []); // Empty dependency array ensures this runs only once on mount
+
+  useEffect(() => {
+    if (isLoaded) {
+        loadTodos()
+    }
+  }, [filter, isLoaded])
 
   const handleAddTodo = (todoData: Omit<Todo, "id" | "createdAt" | "updatedAt">) => {
     todoList.core.addTodo(todoData)
     loadTodos()
+    syncWithBackend();
     setShowForm(false)
   }
 
@@ -50,6 +90,7 @@ export default function TodoListPage() {
     if (editingTodo) {
       todoList.core.updateTodo(editingTodo.id, todoData)
       loadTodos()
+      syncWithBackend();
       setEditingTodo(null)
     }
   }
@@ -57,11 +98,13 @@ export default function TodoListPage() {
   const handleToggleTodo = (id: string) => {
     todoList.core.toggleTodo(id)
     loadTodos()
+    syncWithBackend();
   }
 
   const handleDeleteTodo = (id: string) => {
     todoList.core.deleteTodo(id)
     loadTodos()
+    syncWithBackend();
   }
 
   const handleEditTodo = (todo: Todo) => {
@@ -73,6 +116,7 @@ export default function TodoListPage() {
     const cleared = todoList.core.clearCompleted()
     if (cleared > 0) {
       loadTodos()
+      syncWithBackend();
     }
   }
 
@@ -96,6 +140,7 @@ export default function TodoListPage() {
       const content = e.target?.result as string
       if (todoList.core.importFromJSON(content)) {
         loadTodos()
+        syncWithBackend();
         alert("Todos imported successfully!")
       } else {
         alert("Failed to import todos. Please check the file format.")
