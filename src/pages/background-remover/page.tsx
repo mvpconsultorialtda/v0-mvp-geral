@@ -23,7 +23,7 @@ export default function BackgroundRemoverPage() {
       const result = await backgroundRemover.core.removeBackground(file)
       setProcessedImage(result)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      setError(err instanceof Error ? err.message : "Ocorreu um erro")
     } finally {
       setIsProcessing(false)
     }
@@ -55,8 +55,10 @@ export default function BackgroundRemoverPage() {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Background Remover</h1>
-          <p className="text-muted-foreground">Upload an image to automatically remove its background using AI</p>
+          <h1 className="text-3xl font-bold mb-2">Removedor de Fundo</h1>
+          <p className="text-muted-foreground">
+            Faça o upload de uma imagem para remover automaticamente o fundo usando IA
+          </p>
         </div>
 
         {error && (
@@ -72,7 +74,7 @@ export default function BackgroundRemoverPage() {
             <div className="flex items-center gap-4">
               <Button variant="outline" onClick={handleReset}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Upload New Image
+                Enviar Nova Imagem
               </Button>
             </div>
 
@@ -87,19 +89,19 @@ export default function BackgroundRemoverPage() {
               </Card>
 
               <Card className="p-4">
-                <h3 className="font-semibold mb-2">Background Removed</h3>
+                <h3 className="font-semibold mb-2">Fundo Removido</h3>
                 <img
                   src={processedImage.processed || "/placeholder.svg"}
-                  alt="Background removed"
+                  alt="Fundo removido"
                   className="w-full h-auto rounded-lg"
                 />
               </Card>
             </div>
 
             <div className="flex gap-4 justify-center">
-              <Button onClick={handleEditImage}>Edit Image</Button>
+              <Button onClick={handleEditImage}>Editar Imagem</Button>
               <Button variant="outline" onClick={() => handleDownload()}>
-                Download
+                Baixar
               </Button>
             </div>
           </div>

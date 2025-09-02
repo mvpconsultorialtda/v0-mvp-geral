@@ -71,18 +71,18 @@ export function ImageEditor({ processedImage, onDownload, onClose }: ImageEditor
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold">Background Removed</h2>
+              <h2 className="text-2xl font-bold">Fundo Removido</h2>
               {!processedImage.requiresManualEdit ? (
                 <div className="flex items-center gap-1 text-green-600 text-sm">
                   <Sparkles className="w-4 h-4" />
-                  AI Processed
+                  Processado por IA
                 </div>
               ) : (
-                <div className="text-orange-600 text-sm">Manual Editing Required</div>
+                <div className="text-orange-600 text-sm">Requer Edição Manual</div>
               )}
             </div>
             <Button variant="outline" onClick={onClose}>
-              Close
+              Fechar
             </Button>
           </div>
 
@@ -90,12 +90,12 @@ export function ImageEditor({ processedImage, onDownload, onClose }: ImageEditor
             <div className="lg:col-span-3">
               {showManualTools ? (
                 <div className="mb-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
-                  <strong>Manual Editing:</strong> AI removal failed. Use the <strong>Erase</strong> tool to remove background areas. Use{" "}
-                  <strong>Restore</strong> to bring back accidentally removed parts.
+                  <strong>Edição Manual:</strong> A remoção por IA falhou. Use a ferramenta <strong>Apagar</strong> para remover áreas do fundo. Use{" "}
+                  <strong>Restaurar</strong> para trazer de volta partes removidas acidentalmente.
                 </div>
               ) : (
                 <div className="mb-4 p-3 bg-green-50 rounded-lg text-sm text-green-800">
-                  <strong>AI Processing Complete!</strong> Background has been automatically removed. You can still use manual tools for fine-tuning if needed.
+                  <strong>Processamento por IA Completo!</strong> O fundo foi removido automaticamente. Você ainda pode usar as ferramentas manuais para ajustes finos, se necessário.
                 </div>
               )}
               <canvas
@@ -111,7 +111,7 @@ export function ImageEditor({ processedImage, onDownload, onClose }: ImageEditor
             <div className="space-y-4">
               <div>
                 <h3 className="font-semibold mb-2">
-                  {showManualTools ? "Brush Tools" : "Fine-tune (Optional)"}
+                  {showManualTools ? "Ferramentas de Pincel" : "Ajuste Fino (Opcional)"}
                 </h3>
                 <div className="grid grid-cols-1 gap-2">
                   <Button
@@ -128,13 +128,13 @@ export function ImageEditor({ processedImage, onDownload, onClose }: ImageEditor
                     onClick={() => setBrushSettings((prev) => ({ ...prev, mode: "restore" }))}
                   >
                     <Paintbrush className="w-4 h-4 mr-1" />
-                    Restore
+                    Restaurar
                   </Button>
                 </div>
               </div>
 
               <div>
-                <h3 className="font-semibold mb-2">Brush Size: {brushSettings.size}px</h3>
+                <h3 className="font-semibold mb-2">Tamanho do Pincel: {brushSettings.size}px</h3>
                 <Slider
                   value={[brushSettings.size]}
                   onValueChange={([size]) => setBrushSettings((prev) => ({ ...prev, size }))}
@@ -148,7 +148,7 @@ export function ImageEditor({ processedImage, onDownload, onClose }: ImageEditor
               <div className="space-y-2">
                 <Button onClick={handleReset} variant="outline" className="w-full bg-transparent">
                   <RotateCcw className="w-4 h-4 mr-2" />
-                  Reset
+                  Resetar
                 </Button>
                 <Button onClick={handleDownload} className="w-full">
                   <Download className="w-4 h-4 mr-2" />
@@ -162,18 +162,4 @@ export function ImageEditor({ processedImage, onDownload, onClose }: ImageEditor
     </div>
   )
 }
-div>
-  )
-}
-      </Card>
-    </div>
-  )
-}
-v>
-  )
-}
-    </div>
-  )
-}
-  )
-}
+

@@ -65,7 +65,7 @@ export function TodoForm({ todo, categories, onSubmit, onCancel }: TodoFormProps
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">{todo ? "Edit Todo" : "Add New Todo"}</h2>
+        <h2 className="text-lg font-semibold">{todo ? "Editar Tarefa" : "Adicionar Nova Tarefa"}</h2>
         <Button variant="ghost" size="sm" onClick={onCancel}>
           <X className="h-4 w-4" />
         </Button>
@@ -73,54 +73,54 @@ export function TodoForm({ todo, categories, onSubmit, onCancel }: TodoFormProps
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <Label htmlFor="title">Title *</Label>
+          <Label htmlFor="title">Título *</Label>
           <Input
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter todo title..."
+            placeholder="Digite o título da tarefa..."
             required
           />
         </div>
 
         <div>
-          <Label htmlFor="description">Description</Label>
+          <Label htmlFor="description">Descrição</Label>
           <Textarea
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Enter description (optional)..."
+            placeholder="Digite a descrição (opcional)..."
             rows={3}
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="priority">Priority</Label>
+            <Label htmlFor="priority">Prioridade</Label>
             <Select value={priority} onValueChange={(value: "low" | "medium" | "high") => setPriority(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="low">Baixa</SelectItem>
+                <SelectItem value="medium">Média</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Label htmlFor="dueDate">Due Date</Label>
+            <Label htmlFor="dueDate">Data de Vencimento</Label>
             <Input id="dueDate" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </div>
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <Label>Category</Label>
+            <Label>Categoria</Label>
             <Button type="button" variant="ghost" size="sm" onClick={() => setShowNewCategory(!showNewCategory)}>
               <Plus className="h-3 w-3 mr-1" />
-              New Category
+              Nova Categoria
             </Button>
           </div>
 
@@ -128,15 +128,15 @@ export function TodoForm({ todo, categories, onSubmit, onCancel }: TodoFormProps
             <Input
               value={newCategory}
               onChange={(e) => setNewCategory(e.target.value)}
-              placeholder="Enter new category..."
+              placeholder="Digite a nova categoria..."
             />
           ) : (
-            <Select value={category || "No Category"} onValueChange={setCategory}>
+            <Select value={category || "Sem Categoria"} onValueChange={setCategory}>
               <SelectTrigger>
-                <SelectValue placeholder="Select category (optional)" />
+                <SelectValue placeholder="Selecione a categoria (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="No Category">No Category</SelectItem>
+                <SelectItem value="Sem Categoria">Sem Categoria</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat}
@@ -149,10 +149,10 @@ export function TodoForm({ todo, categories, onSubmit, onCancel }: TodoFormProps
 
         <div className="flex gap-2 pt-4">
           <Button type="submit" className="flex-1">
-            {todo ? "Update Todo" : "Add Todo"}
+            {todo ? "Atualizar Tarefa" : "Adicionar Tarefa"}
           </Button>
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+            Cancelar
           </Button>
         </div>
       </form>

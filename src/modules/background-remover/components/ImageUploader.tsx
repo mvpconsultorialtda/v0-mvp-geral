@@ -46,7 +46,7 @@ export function ImageUploader({ onImageSelect, isProcessing }: ImageUploaderProp
         onDragOver={handleDragOver}
       >
         <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Upload an image</h3>
+        <h3 className="text-lg font-semibold mb-2">Envie uma imagem</h3>
         <p className="text-muted-foreground mb-4">Arraste e solte uma imagem aqui, ou clique para selecionar</p>
         <input
           type="file"
@@ -58,7 +58,7 @@ export function ImageUploader({ onImageSelect, isProcessing }: ImageUploaderProp
         />
         <Button asChild disabled={isProcessing}>
           <label htmlFor="image-upload" className="cursor-pointer">
-            {isProcessing ? "Processing..." : "Select Image"}
+            {isProcessing ? "Processando..." : "Selecionar Imagem"}
           </label>
         </Button>
       </div>

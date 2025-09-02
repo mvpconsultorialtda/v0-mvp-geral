@@ -58,7 +58,7 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
             </h3>
             <div className="flex items-center gap-1">
               <Badge variant="outline" className={`text-xs ${getPriorityColor(todo.priority)}`}>
-                {todo.priority}
+                {todo.priority === 'high' ? 'alta' : todo.priority === 'medium' ? 'média' : 'baixa'}
               </Badge>
               {isHovered && (
                 <div className="flex gap-1">
@@ -100,7 +100,7 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
               <div className={`flex items-center gap-1 ${isOverdue ? "text-red-600" : ""}`}>
                 <Calendar className="h-3 w-3" />
                 {formatDate(todo.dueDate)}
-                {isOverdue && <span className="text-red-600 font-medium">Overdue</span>}
+                {isOverdue && <span className="text-red-600 font-medium">Atrasada</span>}
               </div>
             )}
           </div>

@@ -37,7 +37,7 @@ export default function TodoListPage() {
         body: dataToSave,
       });
     } catch (error) {
-      console.error("Failed to sync with backend", error);
+      console.error("Falha ao sincronizar com o backend", error);
     }
   };
   
@@ -63,7 +63,7 @@ export default function TodoListPage() {
           }
         }
       } catch (error) {
-        console.error("Failed to fetch todos:", error);
+        console.error("Falha ao buscar tarefas:", error);
       } finally {
         setIsLoaded(true);
         loadTodos(); // Initial load after fetching
@@ -141,9 +141,9 @@ export default function TodoListPage() {
       if (todoList.core.importFromJSON(content)) {
         loadTodos()
         syncWithBackend();
-        alert("Todos imported successfully!")
+        alert("Tarefas importadas com sucesso!")
       } else {
-        alert("Failed to import todos. Please check the file format.")
+        alert("Falha ao importar tarefas. Verifique o formato do arquivo.")
       }
     }
     reader.readAsText(file)
@@ -154,29 +154,29 @@ export default function TodoListPage() {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Todo List</h1>
-          <p className="text-muted-foreground">Organize your tasks and stay productive</p>
+          <h1 className="text-3xl font-bold mb-2">Lista de Tarefas</h1>
+          <p className="text-muted-foreground">Organize suas tarefas e mantenha-se produtivo</p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <Card className="p-4">
             <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-            <div className="text-sm text-muted-foreground">Total Tasks</div>
+            <div className="text-sm text-muted-foreground">Total de Tarefas</div>
           </Card>
           <Card className="p-4">
             <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-            <div className="text-sm text-muted-foreground">Completed</div>
+            <div className="text-sm text-muted-foreground">Concluídas</div>
           </Card>
           <Card className="p-4">
             <div className="text-2xl font-bold text-orange-600">{stats.pending}</div>
-            <div className="text-sm text-muted-foreground">Pending</div>
+            <div className="text-sm text-muted-foreground">Pendentes</div>
           </Card>
           <Card className="p-4">
             <div className="text-2xl font-bold text-purple-600">
               {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
             </div>
-            <div className="text-sm text-muted-foreground">Progress</div>
+            <div className="text-sm text-muted-foreground">Progresso</div>
           </Card>
         </div>
 
@@ -187,20 +187,20 @@ export default function TodoListPage() {
               <div className="space-y-2">
                 <Button onClick={() => setShowForm(true)} className="w-full">
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Todo
+                  Adicionar Tarefa
                 </Button>
 
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 bg-transparent">
                     <Download className="h-3 w-3 mr-1" />
-                    Export
+                    Exportar
                   </Button>
                   <div className="flex-1">
                     <input type="file" accept=".json" onChange={handleImport} className="hidden" id="import-file" />
                     <Button variant="outline" size="sm" asChild className="w-full bg-transparent">
                       <label htmlFor="import-file" className="cursor-pointer">
                         <Upload className="h-3 w-3 mr-1" />
-                        Import
+                        Importar
                       </label>
                     </Button>
                   </div>
@@ -214,7 +214,7 @@ export default function TodoListPage() {
                     className="w-full text-destructive hover:text-destructive bg-transparent"
                   >
                     <Trash2 className="h-3 w-3 mr-1" />
-                    Clear Completed
+                    Limpar Concluídas
                   </Button>
                 )}
               </div>
@@ -247,15 +247,15 @@ export default function TodoListPage() {
             {todos.length === 0 ? (
               <Card className="p-8 text-center">
                 <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No todos found</h3>
+                <h3 className="text-lg font-semibold mb-2">Nenhuma tarefa encontrada</h3>
                 <p className="text-muted-foreground mb-4">
                   {filter.status === "all" && !filter.search && !filter.priority && !filter.category
-                    ? "Start by adding your first todo!"
-                    : "Try adjusting your filters or add a new todo."}
+                    ? "Comece adicionando sua primeira tarefa!"
+                    : "Tente ajustar seus filtros ou adicione uma nova tarefa."}
                 </p>
                 <Button onClick={() => setShowForm(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Your First Todo
+                  Adicionar Sua Primeira Tarefa
                 </Button>
               </Card>
             ) : (
