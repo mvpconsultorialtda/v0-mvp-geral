@@ -24,11 +24,13 @@ if (!admin.apps.length) {
     });
     console.log("Firebase Admin SDK initialized.");
   } else {
-    console.warn(
-      "Firebase Admin SDK not initialized. Missing FIREBASE_SERVICE_ACCOUNT_JSON environment variable."
+    // Lança um erro claro se as credenciais não estiverem configuradas
+    throw new Error(
+      "Firebase Admin SDK not initialized. Missing FIREBASE_SERVICE_ACCOUNT_JSON environment variable. Please check your .env.local file and the instructions in lib/firebase-admin.ts"
     );
   }
 }
 
-export const adminAuth = admin.apps.length ? admin.auth() : null;
-export const adminDb = admin.apps.length ? admin.firestore() : null;
+// Exporta `auth` e `db` para consistência com o resto do código
+export const auth = admin.auth();
+export const db = admin.firestore();

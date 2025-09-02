@@ -29,7 +29,14 @@ export function UserNav() {
   }
 
   if (!user) {
-    return null
+    return (
+      <div className="flex items-center space-x-2">
+        <Button onClick={() => router.push('/login')}>Login</Button>
+        <Button variant="outline" onClick={() => router.push('/signup')}>
+          Cadastre-se
+        </Button>
+      </div>
+    )
   }
 
   const isAdmin = idTokenResult?.claims.role === 'admin'
