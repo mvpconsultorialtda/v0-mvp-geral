@@ -1,32 +1,38 @@
-#TESTE DE SYNC
+# Repositório Modular de Aplicações Full-Stack
 
-# MVP Geral
+## Visão do Projeto
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+Este repositório não é apenas uma única aplicação, mas sim uma **coleção de módulos de negócio independentes e reutilizáveis**. A arquitetura é projetada com uma filosofia de "Legos", onde cada módulo em `src/modules` representa um "bloco de construção" (uma feature completa e autocontida).
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/felipe-pedreira-carvalhos-projects/v0-new-chat)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/2puWID614fk)
+O diretório `app`, utilizando o Next.js App Router, atua como a plataforma de montagem. Ele consome os módulos de `src/modules` para construir uma aplicação web coesa, definindo as rotas e a apresentação final.
 
-## Overview
+O objetivo principal é permitir a rápida prototipagem e desenvolvimento de novas aplicações, combinando módulos existentes, criando novas regras de integração e conectando-os a diferentes fontes de dados conforme necessário.
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## Arquitetura
 
-## Deployment
+O projeto é dividido em duas áreas principais:
 
-Your project is live at:
+### 1. `src/modules` - O Coração da Lógica de Negócio
 
-**[https://vercel.com/felipe-pedreira-carvalhos-projects/v0-new-chat](https://vercel.com/felipe-pedreira-carvalhos-projects/v0-new-chat)**
+- **Propósito**: Contém a lógica de negócio principal, componentes, tipos, hooks e funções para cada feature discreta do sistema (ex: `todo-list`, `background-remover`, `user-authentication`).
+- **Princípios**:
+    - **Independência**: Um módulo não deve ter conhecimento direto de outro módulo.
+    - **Portabilidade**: Cada módulo deve ser projetado para ser facilmente extraído e utilizado em um projeto completamente diferente.
+    - **Autocontido**: Tudo o que um módulo precisa para funcionar (sua lógica, componentes de UI específicos, tipos, etc.) deve residir dentro de sua própria pasta.
 
-## Build your app
+### 2. `app` - A Camada de Integração e Apresentação
 
-Continue building your app on:
+- **Propósito**: Define a estrutura da aplicação visível ao usuário, utilizando os módulos de `src/modules`.
+- **Responsabilidades**:
+    - **Roteamento**: Mapeia URLs para páginas e rotas de API (`page.tsx`, `route.ts`).
+    - **Composição de UI**: Monta as páginas utilizando os componentes exportados pelos módulos e componentes de UI globais (`@/components`).
+    - **Injeção de Dependências**: Conecta os módulos a serviços externos, como bancos de dados ou APIs, se necessário (a lógica de conexão específica para *esta* aplicação reside aqui).
 
-**[https://v0.app/chat/projects/2puWID614fk](https://v0.app/chat/projects/2puWID614fk)**
+---
 
-## How It Works
+## Deployments e Desenvolvimento
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+*Este repositório é sincronizado com as implantações do [v0.app](https://v0.app).*
+
+- **Continue desenvolvendo em**: **[v0.app/chat/projects/2puWID614fk](https://v0.app/chat/projects/2puWID614fk)**
+- **Projeto publicado em**: **[https://vercel.com/felipe-pedreira-carvalhos-projects/v0-new-chat](https://vercel.com/felipe-pedreira-carvalhos-projects/v0-new-chat)**
