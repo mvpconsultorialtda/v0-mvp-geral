@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/firebase-admin"; // The specific project dependency
+import { getAdminAuth } from "@/lib/firebase-admin"; // The specific project dependency
 import { verifyAdminRequest } from "@/src/modules/authentication/core"; // The business logic
 
 /**
@@ -8,9 +8,12 @@ import { verifyAdminRequest } from "@/src/modules/authentication/core"; // The b
  * It uses the core authentication module to verify admin privileges before proceeding.
  */
 export async function GET(req: NextRequest) {
+  // Get the auth instance for this request.
+  const adminAuth = getAdminAuth();
+
   // Delegate the admin verification to the core module,
-  // injecting the specific `auth` dependency.
-  const decodedToken = await verifyAdminRequest(auth, req);
+  // injecting the specific `adminAuth` dependency.
+  const decodedToken = await verifyAdminRequest(adminAuth, req);
 
   if (!decodedToken) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
@@ -18,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   // If verification is successful, proceed with the main logic
   try {
-    const users = await auth.listUsers();
+    const users = await adminAuth.listUsers();
     return NextResponse.json({ users: users.users });
   } catch (error) {
     console.error("Error listing users:", error);

@@ -15,7 +15,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
-import { TodoListCore } from '@/src/modules/todo-list'
 import { TodoItem } from '@/src/modules/todo-list/components/TodoItem'
 import { TodoForm } from '@/src/modules/todo-list/components/TodoForm'
 import { TodoFilters } from '@/src/modules/todo-list/components/TodoFilters'
@@ -23,8 +22,29 @@ import type { Todo, TodoFilter } from '@/src/modules/todo-list/types'
 
 export const dynamic = 'force-dynamic'
 
+async function fetchTodos() {
+  const res = await fetch('/api/todos')
+  if (!res.ok) {
+    throw new Error('Failed to fetch todos')
+  }
+  const data = await res.json()
+  return data
+}
+
+async function saveTodos(data: { todos: Todo[]; categories: string[] }) {
+  const res = await fetch('/api/todos', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    throw new Error('Failed to save todos')
+  }
+}
+
 export default function TodoListPage() {
-  const [todoListCore, setTodoListCore] = useState<TodoListCore | null>(null)
   const [todos, setTodos] = useState<Todo[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -37,64 +57,113 @@ export default function TodoListPage() {
   useEffect(() => {
     const init = async () => {
       setIsLoading(true)
-      const core = TodoListCore.getInstance()
-      setTodoListCore(core)
-      await core.refreshFromFile()
-      setTodos(core.getTodos())
-      setCategories(core.getCategories())
-      setIsLoading(false)
+      try {
+        const data = await fetchTodos()
+        setTodos(data.todos)
+        setCategories(data.categories)
+      } catch (error) {
+        toast({
+          title: 'Erro ao carregar tarefas',
+          description: 'Não foi possível buscar os dados do servidor.',
+          variant: 'destructive',
+        })
+      } finally {
+        setIsLoading(false)
+      }
     }
     init()
-  }, [])
+  }, [toast])
 
   const filteredTodos = useMemo(() => {
-    if (!todoListCore) return []
-    return todoListCore.getTodos(filter)
-  }, [todos, filter, todoListCore])
+    return todos.filter((todo) => {
+        if (filter.status === 'all') return true
+        return todo.status === filter.status
+      })
+  }, [todos, filter])
 
-  const refreshTodos = () => {
-    if (!todoListCore) return
-    setTodos(todoListCore.getTodos(filter))
-    setCategories(todoListCore.getCategories())
-  }
+    const refreshTodos = async () => {
+        setIsLoading(true);
+        try {
+            const data = await fetchTodos();
+            setTodos(data.todos);
+            setCategories(data.categories);
+        } catch (error) {
+            toast({
+                title: 'Erro ao atualizar tarefas',
+                description: 'Não foi possível buscar os dados mais recentes.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
 
   const handleAddTodo = async (
     todoData: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>
   ) => {
-    if (!todoListCore) return
-    await todoListCore.addTodo(todoData)
-    refreshTodos()
-    setIsFormVisible(false)
-    toast({
-      title: 'Tarefa Adicionada!',
-      description: `A tarefa '${todoData.title}' foi criada com sucesso.`,
-    })
+    const newTodo = {
+        ...todoData,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+    const newTodos = [...todos, newTodo];
+    try {
+        await saveTodos({ todos: newTodos, categories });
+        await refreshTodos(); 
+        setIsFormVisible(false);
+        toast({
+            title: 'Tarefa Adicionada!',
+            description: `A tarefa '${todoData.title}' foi criada com sucesso.`,
+        });
+    } catch (error) {
+        toast({
+            title: 'Erro ao adicionar tarefa',
+            variant: 'destructive',
+        });
+    }
   }
 
   const handleUpdateTodo = async (
     todoData: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>
   ) => {
-    if (!editingTodo || !todoListCore) return
-    await todoListCore.updateTodo(editingTodo.id, todoData)
-    refreshTodos()
-    setEditingTodo(null)
-    setIsFormVisible(false)
-    toast({
-      title: 'Tarefa Atualizada!',
-      description: `A tarefa '${todoData.title}' foi atualizada.`,
-    })
+    if (!editingTodo) return;
+    const updatedTodos = todos.map(t => t.id === editingTodo.id ? { ...t, ...todoData, updatedAt: new Date().toISOString() } : t);
+    try {
+        await saveTodos({ todos: updatedTodos, categories });
+        await refreshTodos();
+        setEditingTodo(null);
+        setIsFormVisible(false);
+        toast({
+            title: 'Tarefa Atualizada!',
+            description: `A tarefa '${todoData.title}' foi atualizada.`,
+        });
+    } catch (error) {
+        toast({
+            title: 'Erro ao atualizar tarefa',
+            variant: 'destructive',
+        });
+    }
   }
 
   const handleDeleteTodo = async (id: string) => {
-    if (!todoListCore) return
-    const todo = todoListCore.getTodoById(id)
+    const todo = todos.find(t => t.id === id);
     if (todo && confirm(`Tem certeza que deseja remover a tarefa '${todo.title}'?`)) {
-      await todoListCore.deleteTodo(id)
-      refreshTodos()
-      toast({
-        title: 'Tarefa Removida',
-        variant: 'destructive',
-      })
+        const newTodos = todos.filter(t => t.id !== id);
+        try {
+            await saveTodos({ todos: newTodos, categories });
+            await refreshTodos();
+            toast({
+                title: 'Tarefa Removida',
+                variant: 'destructive',
+            });
+        } catch (error) {
+            toast({
+                title: 'Erro ao remover tarefa',
+                variant: 'destructive',
+            });
+        }
     }
   }
 
@@ -102,9 +171,16 @@ export default function TodoListPage() {
     id: string,
     status: 'pending' | 'in-progress' | 'completed'
   ) => {
-    if (!todoListCore) return
-    await todoListCore.updateTodoStatus(id, status)
-    refreshTodos()
+    const updatedTodos = todos.map(t => t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t);
+    try {
+        await saveTodos({ todos: updatedTodos, categories });
+        await refreshTodos();
+    } catch (error) {
+        toast({
+            title: 'Erro ao mudar status',
+            variant: 'destructive',
+        });
+    }
   }
 
   const handleEdit = (todo: Todo) => {
@@ -119,17 +195,14 @@ export default function TodoListPage() {
 
   const handleFilterChange = (newFilter: TodoFilter) => {
     setFilter(newFilter)
-    refreshTodos()
   }
 
   const handleClearFilters = () => {
     setFilter({ status: 'all' })
-    refreshTodos()
   }
 
   const handleExport = () => {
-    if (!todoListCore) return
-    const json = todoListCore.exportToJSON()
+    const json = JSON.stringify({ todos, categories }, null, 2);
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -140,43 +213,10 @@ export default function TodoListPage() {
     toast({ title: 'Tarefas exportadas com sucesso!' })
   }
 
-  const handleImport = () => {
-    if (!todoListCore) return
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = '.json'
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (file) {
-        const reader = new FileReader()
-        reader.onload = async (event) => {
-          try {
-            const success = await todoListCore.importFromJSON(
-              event.target?.result as string
-            )
-            if (success) {
-              refreshTodos()
-              toast({ title: 'Tarefas importadas com sucesso!' })
-            } else {
-              toast({
-                title: 'Erro na Importação',
-                description: 'Formato de arquivo inválido.',
-                variant: 'destructive',
-              })
-            }
-          } catch (error) {
-            toast({
-              title: 'Erro na Importação',
-              description: 'Não foi possível processar o arquivo.',
-              variant: 'destructive',
-            })
-          }
-        }
-        reader.readAsText(file)
-      }
-    }
-    input.click()
-  }
+//   const handleImport = () => {
+//     // TODO: Implement import functionality by sending file to the server
+//     toast({ title: 'Importação ainda não implementada' })
+//   }
 
   return (
     <div className='min-h-screen bg-background p-4'>
@@ -190,10 +230,10 @@ export default function TodoListPage() {
             </Button>
           </div>
           <div className='flex items-center gap-2'>
-            <Button variant='outline' size='sm' onClick={handleImport}>
+            {/* <Button variant='outline' size='sm' onClick={handleImport}>
               <FileUp className='h-4 w-4 mr-2' />
               Importar
-            </Button>
+            </Button> */}
             <Button variant='outline' size='sm' onClick={handleExport}>
               <FileDown className='h-4 w-4 mr-2' />
               Exportar

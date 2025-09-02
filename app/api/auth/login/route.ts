@@ -1,6 +1,6 @@
 
 import { NextRequest } from "next/server";
-import { auth } from "@/lib/firebase-admin"; // The specific project dependency
+import { getAdminAuth } from "@/lib/firebase-admin"; // The specific project dependency
 import { createSession } from "@/src/modules/authentication/core"; // The business logic
 
 /**
@@ -11,7 +11,7 @@ import { createSession } from "@/src/modules/authentication/core"; // The busine
 export async function POST(req: NextRequest) {
   const { idToken } = await req.json();
 
-  // Delegate the session creation to the core module,
-  // injecting the specific `auth` dependency.
-  return await createSession(auth, idToken);
+  // Get the auth instance and delegate session creation to the core module.
+  const adminAuth = getAdminAuth();
+  return await createSession(adminAuth, idToken);
 }
