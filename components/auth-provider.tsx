@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase-client";
-import { Spinner } from "@/components/ui/spinner"; // Criarei este componente depois
+import { Spinner } from "@/components/ui/spinner";
 
 interface AuthContextType {
   user: User | null;
@@ -31,10 +31,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = { user, loading };
 
   if (loading) {
-    // TODO: Criar um componente de spinner/loading mais elegante
     return (
       <div className="flex items-center justify-center h-screen">
-        <p>Carregando...</p>
+        <Spinner />
       </div>
     );
   }
