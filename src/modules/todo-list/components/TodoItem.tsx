@@ -2,19 +2,19 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Trash2, Edit, Calendar, Clock } from "lucide-react"
-import type { Todo } from "../types"
+import type { Todo, TodoStatus } from "../types"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface TodoItemProps {
   todo: Todo
-  onToggle: (id: string) => void
+  onStatusChange: (id: string, status: TodoStatus) => void
   onDelete: (id: string) => void
   onEdit: (todo: Todo) => void
 }
 
-export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
+export function TodoItem({ todo, onStatusChange, onDelete, onEdit }: TodoItemProps) {
   const [isHovered, setIsHovered] = useState(false)
 
   const getPriorityColor = (priority: string) => {
@@ -30,6 +30,17 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
     }
   }
 
+  const getStatusColor = (status: TodoStatus) => {
+    switch (status) {
+      case "completed":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      case "in-progress":
+        return "bg-purple-100 text-purple-800 border-purple-200"
+      case "pending":
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
+  }
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("pt-BR", {
       day: "2-digit",
@@ -38,22 +49,20 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
     })
   }
 
-  const isOverdue = todo.dueDate && new Date() > todo.dueDate && !todo.completed
+  const isOverdue = todo.dueDate && new Date() > todo.dueDate && todo.status !== "completed"
 
   return (
     <Card
       className={`p-4 transition-all duration-200 ${
-        todo.completed ? "opacity-60 bg-muted/30" : ""
+        todo.status === "completed" ? "opacity-60 bg-muted/30" : ""
       } ${isHovered ? "shadow-md" : ""}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="flex items-start gap-3">
-        <Checkbox checked={todo.completed} onCheckedChange={() => onToggle(todo.id)} className="mt-1" />
-
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-2">
-            <h3 className={`font-medium text-sm ${todo.completed ? "line-through text-muted-foreground" : ""}`}>
+            <h3 className={`font-medium text-sm ${todo.status === "completed" ? "line-through text-muted-foreground" : ""}`}>
               {todo.title}
             </h3>
             <div className="flex items-center gap-1">
@@ -79,12 +88,23 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
           </div>
 
           {todo.description && (
-            <p className={`text-xs text-muted-foreground mb-2 ${todo.completed ? "line-through" : ""}`}>
+            <p className={`text-xs text-muted-foreground mb-2 ${todo.status === "completed" ? "line-through" : ""}`}>
               {todo.description}
             </p>
           )}
 
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-4">
+            <Select value={todo.status} onValueChange={(value: TodoStatus) => onStatusChange(todo.id, value)}>
+              <SelectTrigger className={`text-xs h-7 ${getStatusColor(todo.status)}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="in-progress">Em Andamento</SelectItem>
+                <SelectItem value="completed">Concluída</SelectItem>
+              </SelectContent>
+            </Select>
+
             {todo.category && (
               <Badge variant="secondary" className="text-xs">
                 {todo.category}

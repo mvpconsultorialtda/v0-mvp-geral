@@ -1,8 +1,10 @@
+export type TodoStatus = "pending" | "in-progress" | "completed"
+
 export interface Todo {
   id: string
   title: string
   description?: string
-  completed: boolean
+  status: TodoStatus
   priority: "low" | "medium" | "high"
   category?: string
   createdAt: Date
@@ -17,7 +19,7 @@ export interface TodoList {
 }
 
 export interface TodoFilter {
-  status: "all" | "completed" | "pending"
+  status: "all" | TodoStatus
   priority?: "low" | "medium" | "high"
   category?: string
   search?: string
@@ -27,6 +29,7 @@ export interface TodoStats {
   total: number
   completed: number
   pending: number
+  inProgress: number
   byPriority: Record<string, number>
   byCategory: Record<string, number>
 }

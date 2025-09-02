@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { X, Plus } from "lucide-react"
-import type { Todo } from "../types"
+import type { Todo, TodoStatus } from "../types"
 
 interface TodoFormProps {
   todo?: Todo | null
@@ -22,6 +22,7 @@ export function TodoForm({ todo, categories, onSubmit, onCancel }: TodoFormProps
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium")
+  const [status, setStatus] = useState<TodoStatus>("pending")
   const [category, setCategory] = useState("")
   const [newCategory, setNewCategory] = useState("")
   const [dueDate, setDueDate] = useState("")
@@ -32,6 +33,7 @@ export function TodoForm({ todo, categories, onSubmit, onCancel }: TodoFormProps
       setTitle(todo.title)
       setDescription(todo.description || "")
       setPriority(todo.priority)
+      setStatus(todo.status)
       setCategory(todo.category || "")
       setDueDate(todo.dueDate ? todo.dueDate.toISOString().split("T")[0] : "")
     }
@@ -47,8 +49,8 @@ export function TodoForm({ todo, categories, onSubmit, onCancel }: TodoFormProps
       title: title.trim(),
       description: description.trim() || undefined,
       priority,
+      status,
       category: finalCategory || undefined,
-      completed: todo?.completed || false,
       dueDate: dueDate ? new Date(dueDate) : undefined,
     })
 
@@ -56,6 +58,7 @@ export function TodoForm({ todo, categories, onSubmit, onCancel }: TodoFormProps
     setTitle("")
     setDescription("")
     setPriority("medium")
+    setStatus("pending")
     setCategory("")
     setNewCategory("")
     setDueDate("")
@@ -94,7 +97,20 @@ export function TodoForm({ todo, categories, onSubmit, onCancel }: TodoFormProps
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select value={status} onValueChange={(value: TodoStatus) => setStatus(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="in-progress">Em Andamento</SelectItem>
+                <SelectItem value="completed">Concluída</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label htmlFor="priority">Prioridade</Label>
             <Select value={priority} onValueChange={(value: "low" | "medium" | "high") => setPriority(value)}>

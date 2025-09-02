@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Search, Filter, X } from "lucide-react"
-import type { TodoFilter } from "../types"
+import type { TodoFilter, TodoStatus } from "../types"
 
 interface TodoFiltersProps {
   filter: TodoFilter
@@ -15,6 +15,12 @@ interface TodoFiltersProps {
 
 export function TodoFilters({ filter, categories, onFilterChange, onClearFilters }: TodoFiltersProps) {
   const hasActiveFilters = filter.status !== "all" || filter.priority || filter.category || filter.search
+
+  const statusText = {
+    pending: "Pendente",
+    "in-progress": "Em Andamento",
+    completed: "Concluído",
+  }
 
   return (
     <div className="space-y-4">
@@ -43,14 +49,15 @@ export function TodoFilters({ filter, categories, onFilterChange, onClearFilters
         <div>
           <Select
             value={filter.status}
-            onValueChange={(value: "all" | "completed" | "pending") => onFilterChange({ ...filter, status: value })}
+            onValueChange={(value: "all" | TodoStatus) => onFilterChange({ ...filter, status: value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className="truncate w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as Tarefas</SelectItem>
               <SelectItem value="pending">Pendentes</SelectItem>
+              <SelectItem value="in-progress">Em Andamento</SelectItem>
               <SelectItem value="completed">Concluídas</SelectItem>
             </SelectContent>
           </Select>
@@ -61,7 +68,7 @@ export function TodoFilters({ filter, categories, onFilterChange, onClearFilters
             value={filter.priority || "none"}
             onValueChange={(value) => onFilterChange({ ...filter, priority: value === "none" ? undefined : value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className="truncate w-full">
               <SelectValue placeholder="Todas as Prioridades" />
             </SelectTrigger>
             <SelectContent>
@@ -78,7 +85,7 @@ export function TodoFilters({ filter, categories, onFilterChange, onClearFilters
             value={filter.category || "none"}
             onValueChange={(value) => onFilterChange({ ...filter, category: value === "none" ? undefined : value })}
           >
-            <SelectTrigger>
+            <SelectTrigger className="truncate w-full">
               <SelectValue placeholder="Todas as Categorias" />
             </SelectTrigger>
             <SelectContent>
@@ -97,7 +104,7 @@ export function TodoFilters({ filter, categories, onFilterChange, onClearFilters
         <div className="flex flex-wrap gap-2">
           {filter.status !== "all" && (
             <Badge variant="secondary">
-              Status: {filter.status === 'pending' ? 'Pendente' : 'Concluído'}
+              Status: {statusText[filter.status as TodoStatus]}
               <button
                 onClick={() => onFilterChange({ ...filter, status: "all" })}
                 className="ml-1 hover:text-destructive"

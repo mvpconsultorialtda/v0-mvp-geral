@@ -1,4 +1,4 @@
-import type { Todo, TodoList, TodoFilter, TodoStats } from "./types"
+import type { Todo, TodoList, TodoFilter, TodoStats, TodoStatus } from "./types"
 
 export class TodoListCore {
   private static instance: TodoListCore
@@ -50,6 +50,7 @@ export class TodoListCore {
           lastUpdated: new Date(data.lastUpdated),
           todos: data.todos.map((todo: any) => ({
             ...todo,
+            status: todo.status || (todo.completed ? "completed" : "pending"),
             createdAt: new Date(todo.createdAt),
             updatedAt: new Date(todo.updatedAt),
             dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
@@ -75,6 +76,7 @@ export class TodoListCore {
           lastUpdated: new Date(data.lastUpdated),
           todos: data.todos.map((todo: any) => ({
             ...todo,
+            status: todo.status || (todo.completed ? "completed" : "pending"),
             createdAt: new Date(todo.createdAt),
             updatedAt: new Date(todo.updatedAt),
             dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,
@@ -172,21 +174,19 @@ export class TodoListCore {
     return false
   }
 
-  async toggleTodo(id: string): Promise<Todo | null> {
+  async updateTodoStatus(id: string, status: TodoStatus): Promise<Todo | null> {
     const todo = this.todoList.todos.find((t) => t.id === id)
     if (!todo) return null
 
-    return await this.updateTodo(id, { completed: !todo.completed })
+    return await this.updateTodo(id, { status })
   }
 
   getTodos(filter?: TodoFilter): Todo[] {
     let filteredTodos = [...this.todoList.todos]
 
     if (filter) {
-      if (filter.status === "completed") {
-        filteredTodos = filteredTodos.filter((todo) => todo.completed)
-      } else if (filter.status === "pending") {
-        filteredTodos = filteredTodos.filter((todo) => !todo.completed)
+      if (filter.status !== "all") {
+        filteredTodos = filteredTodos.filter((todo) => todo.status === filter.status)
       }
 
       if (filter.priority) {
@@ -224,8 +224,9 @@ export class TodoListCore {
 
   getStats(): TodoStats {
     const todos = this.todoList.todos
-    const completed = todos.filter((t) => t.completed).length
-    const pending = todos.length - completed
+    const completed = todos.filter((t) => t.status === "completed").length
+    const pending = todos.filter((t) => t.status === "pending").length
+    const inProgress = todos.filter((t) => t.status === "in-progress").length
 
     const byPriority = todos.reduce(
       (acc, todo) => {
@@ -248,6 +249,7 @@ export class TodoListCore {
       total: todos.length,
       completed,
       pending,
+      inProgress,
       byPriority,
       byCategory,
     }
@@ -255,7 +257,7 @@ export class TodoListCore {
 
   async clearCompleted(): Promise<number> {
     const initialLength = this.todoList.todos.length
-    this.todoList.todos = this.todoList.todos.filter((todo) => !todo.completed)
+    this.todoList.todos = this.todoList.todos.filter((todo) => todo.status !== "completed")
     const removedCount = initialLength - this.todoList.todos.length
 
     if (removedCount > 0) {
@@ -278,6 +280,7 @@ export class TodoListCore {
           lastUpdated: new Date(parsed.lastUpdated || Date.now()),
           todos: parsed.todos.map((todo: any) => ({
             ...todo,
+            status: todo.status || (todo.completed ? "completed" : "pending"),
             createdAt: new Date(todo.createdAt),
             updatedAt: new Date(todo.updatedAt),
             dueDate: todo.dueDate ? new Date(todo.dueDate) : undefined,

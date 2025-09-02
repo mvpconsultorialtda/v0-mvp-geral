@@ -10,7 +10,7 @@ import { TodoFilters } from "@/src/modules/todo-list/components/TodoFilters"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Plus, Download, Upload, Trash2, CheckCircle } from "lucide-react"
-import type { Todo, TodoFilter, TodoStats } from "@/src/modules/todo-list/types"
+import type { Todo, TodoFilter, TodoStats, TodoStatus } from "@/src/modules/todo-list/types"
 
 export default function TodoListPage() {
   const [todos, setTodos] = useState<Todo[]>([])
@@ -21,6 +21,7 @@ export default function TodoListPage() {
     total: 0,
     completed: 0,
     pending: 0,
+    inProgress: 0,
     byPriority: {},
     byCategory: {},
   })
@@ -95,8 +96,8 @@ export default function TodoListPage() {
     }
   }
 
-  const handleToggleTodo = (id: string) => {
-    todoList.core.toggleTodo(id)
+  const handleStatusChange = (id: string, status: TodoStatus) => {
+    todoList.core.updateTodoStatus(id, status)
     loadTodos()
     syncWithBackend();
   }
@@ -159,21 +160,25 @@ export default function TodoListPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <Card className="p-4">
             <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
             <div className="text-sm text-muted-foreground">Total de Tarefas</div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-            <div className="text-sm text-muted-foreground">Concluídas</div>
           </Card>
           <Card className="p-4">
             <div className="text-2xl font-bold text-orange-600">{stats.pending}</div>
             <div className="text-sm text-muted-foreground">Pendentes</div>
           </Card>
           <Card className="p-4">
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-purple-600">{stats.inProgress}</div>
+            <div className="text-sm text-muted-foreground">Em Andamento</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+            <div className="text-sm text-muted-foreground">Concluídas</div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-2xl font-bold text-teal-600">
               {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
             </div>
             <div className="text-sm text-muted-foreground">Progresso</div>
@@ -264,7 +269,7 @@ export default function TodoListPage() {
                   <TodoItem
                     key={todo.id}
                     todo={todo}
-                    onToggle={handleToggleTodo}
+                    onStatusChange={handleStatusChange}
                     onDelete={handleDeleteTodo}
                     onEdit={handleEditTodo}
                   />
