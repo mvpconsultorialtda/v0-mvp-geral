@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/components/auth-provider";
 import { Header } from "@/components/layout/header";
+import { Toaster } from "@/components/ui/toaster";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -10,6 +11,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     <>
       {user && <Header />}
       <main>{children}</main>
+      <Toaster />
     </>
   );
 }
