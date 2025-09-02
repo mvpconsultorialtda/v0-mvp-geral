@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { LogOut } from "lucide-react";
-import { useAuth } from "@/components/auth-provider";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { LogOut } from 'lucide-react'
+import { useAuth } from '@/components/auth-provider'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,30 +12,34 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase-client";
-import { useRouter } from "next/navigation";
+} from '@/components/ui/dropdown-menu'
+import { useRouter } from 'next/navigation'
 
 export function UserNav() {
-  const { user } = useAuth();
-  const router = useRouter();
+  const { user, idTokenResult } = useAuth()
+  const router = useRouter()
 
   const handleLogout = async () => {
-    await signOut(auth);
-    router.push("/login");
-  };
+    const res = await fetch('/api/auth/logout', {
+      method: 'POST',
+    })
+    if (res.ok) {
+      router.push('/login')
+    }
+  }
 
   if (!user) {
-    return null;
+    return null
   }
+
+  const isAdmin = idTokenResult?.claims.role === 'admin'
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user.photoURL ?? ""} alt={user.displayName ?? ""} />
+            <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? ''} />
             <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
@@ -43,7 +47,7 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.displayName ?? "Usuário"}</p>
+            <p className="text-sm font-medium leading-none">{user.displayName ?? 'Usuário'}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
@@ -51,12 +55,14 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem disabled>
+          <DropdownMenuItem onClick={() => router.push('/profile')}>
             Perfil
           </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-            Configurações
-          </DropdownMenuItem>
+          {isAdmin && (
+            <DropdownMenuItem onClick={() => router.push('/admin')}>
+              Painel do Admin
+            </DropdownMenuItem>
+          )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
@@ -65,5 +71,5 @@ export function UserNav() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }

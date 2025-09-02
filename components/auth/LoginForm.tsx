@@ -1,37 +1,51 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase-client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import Link from "next/link";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { auth } from '@/lib/firebase-client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import Link from 'next/link'
 
 export default function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push("/todo-list");
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      const token = await userCredential.user.getIdToken()
+
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      })
+
+      if (res.ok) {
+        router.push('/')
+      } else {
+        throw new Error('Failed to create session')
+      }
     } catch (error: any) {
-      setError("Email ou senha inválidos. Por favor, tente novamente.");
-      console.error(error);
+      setError('Email ou senha inválidos. Por favor, tente novamente.')
+      console.error(error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <Card>
@@ -65,10 +79,10 @@ export default function LoginForm() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Entrando..." : "Entrar"}
+            {loading ? 'Entrando...' : 'Entrar'}
           </Button>
           <p className="text-sm text-center text-muted-foreground">
-            Não tem uma conta?{" "}
+            Não tem uma conta?{' '}
             <Link href="/signup" className="text-primary hover:underline">
               Cadastre-se
             </Link>
@@ -76,5 +90,5 @@ export default function LoginForm() {
         </CardFooter>
       </form>
     </Card>
-  );
+  )
 }

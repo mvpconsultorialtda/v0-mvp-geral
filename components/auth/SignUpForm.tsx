@@ -1,39 +1,63 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase-client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import Link from "next/link";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { auth } from '@/lib/firebase-client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import Link from 'next/link'
 
 export default function SignUpForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      // O onAuthStateChanged no AuthProvider vai detectar a mudança
-      // e redirecionar o usuário ou atualizar o estado global.
-      // Por enquanto, vamos redirecionar para a página principal.
-      router.push("/todo-list");
+      const signupRes = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (!signupRes.ok) {
+        const { message } = await signupRes.json()
+        throw new Error(message)
+      }
+
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      const token = await userCredential.user.getIdToken()
+
+      const loginRes = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      })
+
+      if (loginRes.ok) {
+        router.push('/')
+      } else {
+        throw new Error('Failed to create session')
+      }
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <Card>
@@ -67,10 +91,10 @@ export default function SignUpForm() {
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Cadastrando..." : "Cadastrar"}
+            {loading ? 'Cadastrando...' : 'Cadastrar'}
           </Button>
           <p className="text-sm text-center text-muted-foreground">
-            Já tem uma conta?{" "}
+            Já tem uma conta?{' '}
             <Link href="/login" className="text-primary hover:underline">
               Faça login
             </Link>
@@ -78,5 +102,5 @@ export default function SignUpForm() {
         </CardFooter>
       </form>
     </Card>
-  );
+  )
 }
