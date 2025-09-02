@@ -15,9 +15,6 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-// DEBUG: Imprime a configuração no console do navegador para depuração.
-console.log("Firebase Config Loaded:", firebaseConfig);
-
 // Inicialização segura do Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
