@@ -120,7 +120,7 @@ export function ImageEditor({ processedImage, onDownload, onClose }: ImageEditor
                     onClick={() => setBrushSettings((prev) => ({ ...prev, mode: "erase" }))}
                   >
                     <Eraser className="w-4 h-4 mr-1" />
-                    Erase Background
+                    Apagar Fundo
                   </Button>
                   <Button
                     variant={brushSettings.mode === "restore" ? "default" : "outline"}
@@ -152,7 +152,7 @@ export function ImageEditor({ processedImage, onDownload, onClose }: ImageEditor
                 </Button>
                 <Button onClick={handleDownload} className="w-full">
                   <Download className="w-4 h-4 mr-2" />
-                  Download
+                  Baixar
                 </Button>
               </div>
             </div>
@@ -160,5 +160,20 @@ export function ImageEditor({ processedImage, onDownload, onClose }: ImageEditor
         </div>
       </Card>
     </div>
+  )
+}
+div>
+  )
+}
+      </Card>
+    </div>
+  )
+}
+v>
+  )
+}
+    </div>
+  )
+}
   )
 }
