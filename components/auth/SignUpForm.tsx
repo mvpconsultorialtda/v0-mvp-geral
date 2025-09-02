@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
+// Importe signInWithEmailAndPassword em vez de createUserWithEmailAndPassword
+import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '@/lib/firebase-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,7 @@ export default function SignUpForm() {
     setError(null)
 
     try {
+      // 1. Chame a API do backend para criar o usuário e definir a role.
       const signupRes = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
@@ -31,14 +33,18 @@ export default function SignUpForm() {
         body: JSON.stringify({ email, password }),
       })
 
+      const signupData = await signupRes.json()
+
       if (!signupRes.ok) {
-        const { message } = await signupRes.json()
-        throw new Error(message)
+        // Se a API retornar um erro (ex: email já existe), mostre-o.
+        throw new Error(signupData.message || 'Failed to create user.')
       }
 
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      // 2. Se o usuário foi criado com sucesso no backend, faça o LOGIN no frontend.
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const token = await userCredential.user.getIdToken()
 
+      // 3. Envie o token para a API de login para criar a sessão (cookie).
       const loginRes = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -48,9 +54,12 @@ export default function SignUpForm() {
       })
 
       if (loginRes.ok) {
+        // 4. Redirecione o usuário para a página principal após o login bem-sucedido.
         router.push('/')
+        router.refresh() // Garante que o estado do servidor seja atualizado
       } else {
-        throw new Error('Failed to create session')
+        const loginData = await loginRes.json()
+        throw new Error(loginData.message || 'Failed to create session')
       }
     } catch (error: any) {
       setError(error.message)
