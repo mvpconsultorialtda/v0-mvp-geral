@@ -1,35 +1,47 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin";
-import { verifyAdminRequest } from "@/src/modules/authentication/core";
+import { verifySession } from "@/lib/session"; // Importa a nova função de verificação de sessão
+import { defineAbilitiesFor } from "@/src/modules/access-control/ability"; // Importa as definições de habilidade do CASL
 
-/**
- * API route for admin-level user management.
- * - GET: Lists all users.
- * - POST: Updates a user's role.
- * All actions require administrator privileges.
- */
+// Função auxiliar para verificar permissões de administrador usando CASL
+async function checkAdminPermissions(req: NextRequest) {
+  const user = await verifySession(req);
+
+  if (!user) {
+    return { authorized: false, response: NextResponse.json({ message: "Unauthorized" }, { status: 401 }) };
+  }
+
+  const ability = defineAbilitiesFor(user);
+
+  // Verifica se o usuário tem a permissão para 'manage' (gerenciar) o assunto 'User'.
+  // A role 'admin' tem a permissão 'manage' em 'all', que passa nesta verificação.
+  if (ability.cannot('manage', 'User')) {
+    return { authorized: false, response: NextResponse.json({ message: "Forbidden" }, { status: 403 }) };
+  }
+
+  return { authorized: true, response: null };
+}
+
 
 export async function GET(req: NextRequest) {
-  const adminAuth = getAdminAuth();
-  
-  // 1. Verify if the request comes from an authenticated admin.
-  const decodedToken = await verifyAdminRequest(adminAuth, req);
-  if (!decodedToken) {
-    return NextResponse.json({ message: "Acesso não autorizado." }, { status: 403 });
+  // 1. Verifica as permissões usando o novo sistema centralizado.
+  const { authorized, response } = await checkAdminPermissions(req);
+  if (!authorized) {
+    return response;
   }
 
   try {
-    // 2. Fetch all users from Firebase Authentication.
-    const listUsersResult = await adminAuth.listUsers(1000); // Fetches up to 1000 users
+    // 2. Continua com a lógica de negócio se a permissão for concedida.
+    const adminAuth = getAdminAuth();
+    const listUsersResult = await adminAuth.listUsers(1000);
     
     const users = listUsersResult.users.map(user => ({
       uid: user.uid,
       email: user.email,
-      role: user.customClaims?.role || 'user', // Default to 'user' if no role is set
+      role: user.customClaims?.role || 'user', 
     }));
 
-    // 3. Return the list of users.
     return NextResponse.json({ users }, { status: 200 });
 
   } catch (error) {
@@ -39,26 +51,23 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const adminAuth = getAdminAuth();
-
-    // 1. Verify if the request comes from an authenticated admin.
-    const decodedToken = await verifyAdminRequest(adminAuth, req);
-    if (!decodedToken) {
-      return NextResponse.json({ message: "Acesso não autorizado." }, { status: 403 });
+    // 1. Verifica as permissões usando o novo sistema centralizado.
+    const { authorized, response } = await checkAdminPermissions(req);
+    if (!authorized) {
+      return response;
     }
 
     try {
-        // 2. Get the user ID (uid) and the new role from the request body.
+        // 2. Continua com a lógica de negócio se a permissão for concedida.
         const { uid, role } = await req.json();
 
         if (!uid || !role) {
             return NextResponse.json({ message: "UID do usuário e a nova role são obrigatórios." }, { status: 400 });
         }
 
-        // 3. Set the new custom claim for the specified user.
+        const adminAuth = getAdminAuth();
         await adminAuth.setCustomUserClaims(uid, { role });
 
-        // 4. Return a success response.
         return NextResponse.json({ message: `Role do usuário ${uid} atualizada para ${role} com sucesso.` }, { status: 200 });
 
     } catch (error) {

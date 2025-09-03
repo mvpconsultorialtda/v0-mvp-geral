@@ -1,7 +1,7 @@
 'use client'
 
 import { LogOut } from 'lucide-react'
-import { useAuth } from '@/components/auth/AuthProvider' 
+import { useAuth } from '@/components/auth/AuthProvider'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -17,39 +17,26 @@ import { useRouter } from 'next/navigation'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase-client'
 import { Spinner } from '../ui/spinner'
+import { useAbility } from '@/src/modules/access-control/AbilityContext' // Importa o hook do CASL
 
 export function UserNav() {
-  const { user, isAdmin, authLoading, isReady } = useAuth() // Alterado: loading -> authLoading
+  const { user, authLoading, isReady } = useAuth()
   const router = useRouter()
+  const ability = useAbility() // Obtém as habilidades do contexto
 
   const handleLogout = async () => {
     try {
-      // 1. Desloga do Firebase no cliente
       await signOut(auth)
-
-      // 2. Chama a API para destruir a sessão no servidor
-      const res = await fetch('/api/auth/logout', {
-        method: 'POST',
-      });
-
-      // 3. Redireciona e força o refresh, independentemente do resultado da API,
-      // pois o cliente já está deslogado. O middleware cuidará da segurança.
-      if (!res.ok) {
-          console.error('Falha ao limpar a sessão do servidor.');
-      }
-
+      await fetch('/api/auth/logout', { method: 'POST' })
     } catch (error) {
       console.error('Erro no processo de logout: ', error)
     } finally {
-        // O onAuthStateChanged no AuthProvider vai detectar o logout e atualizar o estado.
-        // O refresh garante que o middleware será reavaliado se o usuário tentar navegar.
-        router.push('/login');
-        router.refresh();
+      router.push('/login')
+      router.refresh()
     }
   }
 
-  // Alterado: loading -> authLoading
-  if (authLoading || !isReady) {
+  if (authLoading || !isReady || !ability) { // Espera a habilidade ser carregada
     return <Spinner size="small" />
   }
 
@@ -87,7 +74,8 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          {isAdmin && (
+          {/* A verificação agora é feita usando as regras centralizadas do CASL */}
+          {ability.can('access', 'AdminPanel') && (
             <DropdownMenuItem onClick={() => router.push('/admin')}>
               Painel do Admin
             </DropdownMenuItem>
