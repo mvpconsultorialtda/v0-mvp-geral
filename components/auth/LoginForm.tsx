@@ -31,11 +31,12 @@ export default function LoginForm() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ idToken: token }),
       })
 
       if (res.ok) {
         router.push('/')
+        router.refresh() // Garante que o estado do servidor seja atualizado
       } else {
         throw new Error('Failed to create session')
       }
