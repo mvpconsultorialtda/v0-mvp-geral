@@ -14,16 +14,36 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
+import { signOut } from 'firebase/auth'
+import { auth } from '@/lib/firebase-client'
 
 export function UserNav() {
   const { user, idTokenResult } = useAuth()
   const router = useRouter()
 
   const handleLogout = async () => {
-    const res = await fetch('/api/auth/logout', {
-      method: 'POST',
-    })
-    if (res.ok) {
+    try {
+      // 1. Faz o logout do cliente (Firebase)
+      await signOut(auth)
+
+      // 2. Faz o logout do servidor (destruindo o cookie)
+      const res = await fetch('/api/auth/logout', {
+        method: 'POST',
+      })
+
+      if (res.ok) {
+        // 3. Redireciona e força a atualização da rota
+        router.push('/login')
+        router.refresh()
+      } else {
+        // Se a chamada da API falhar, ainda força o redirecionamento e refresh
+        // porque o cliente já foi deslogado pelo signOut(auth).
+        router.push('/login')
+        router.refresh()
+      }
+    } catch (error) {
+      console.error('Erro ao fazer logout: ', error)
+      // Em caso de erro, também tenta redirecionar
       router.push('/login')
       router.refresh()
     }
