@@ -1,7 +1,7 @@
 'use client'
 
 import { LogOut } from 'lucide-react'
-import { useAuth } from '@/components/auth-provider'
+import { useAuth } from '@/components/auth/AuthProvider' // Corrigido o caminho do import
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,39 +16,33 @@ import {
 import { useRouter } from 'next/navigation'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase-client'
+import { Spinner } from '../ui/spinner' // Importar o spinner
 
 export function UserNav() {
-  const { user, idTokenResult } = useAuth()
+  // 1. Obter o estado de autenticação correto do AuthProvider
+  const { user, isAdmin, loading, isReady } = useAuth()
   const router = useRouter()
 
   const handleLogout = async () => {
     try {
-      // 1. Faz o logout do cliente (Firebase)
       await signOut(auth)
-
-      // 2. Faz o logout do servidor (destruindo o cookie)
-      const res = await fetch('/api/auth/logout', {
-        method: 'POST',
-      })
-
-      if (res.ok) {
-        // 3. Redireciona e força a atualização da rota
-        router.push('/login')
-        router.refresh()
-      } else {
-        // Se a chamada da API falhar, ainda força o redirecionamento e refresh
-        // porque o cliente já foi deslogado pelo signOut(auth).
-        router.push('/login')
-        router.refresh()
-      }
+      // A API de logout no servidor não é mais necessária pois o estado é gerenciado no cliente com onAuthStateChanged
+      router.push('/login')
+      router.refresh() // Força a atualização do estado no layout
     } catch (error) {
       console.error('Erro ao fazer logout: ', error)
-      // Em caso de erro, também tenta redirecionar
+      // Forçar o redirecionamento mesmo em caso de erro
       router.push('/login')
       router.refresh()
     }
   }
 
+  // 2. Mostrar um spinner ou nada enquanto a autenticação está sendo verificada
+  if (loading || !isReady) {
+    return <Spinner size="small" /> // Mostra um indicador de carregamento
+  }
+
+  // 3. Se não houver usuário após a verificação, mostrar botões de login/cadastro
   if (!user) {
     return (
       <div className="flex items-center space-x-2">
@@ -60,15 +54,16 @@ export function UserNav() {
     )
   }
 
-  const isAdmin = idTokenResult?.claims.role === 'admin'
+  // 4. Se o usuário estiver logado, mostrar o menu do usuário
+  const userInitial = user.displayName?.[0] || user.email?.[0]
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? ''} />
-            <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+            <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? ''} />
+            <AvatarFallback>{userInitial?.toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -83,9 +78,12 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push('/profile')}>
+          {/* A página de perfil pode ser adicionada no futuro */}
+          {/* <DropdownMenuItem onClick={() => router.push('/profile')}>
             Perfil
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
+          
+          {/* 5. Usar o booleano `isAdmin` diretamente */}
           {isAdmin && (
             <DropdownMenuItem onClick={() => router.push('/admin')}>
               Painel do Admin
