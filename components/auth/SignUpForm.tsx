@@ -50,7 +50,7 @@ export default function SignUpForm() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ idToken: token }),
       })
 
       if (loginRes.ok) {
