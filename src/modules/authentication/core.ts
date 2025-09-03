@@ -29,8 +29,8 @@ export async function createUser(auth: AdminAuth, email: string, password: strin
       password,
     });
 
-    // Optional: Set a default role for the new user.
-    // await auth.setCustomUserClaims(userRecord.uid, { role: 'user' });
+    // Set a default role for the new user.
+    await auth.setCustomUserClaims(userRecord.uid, { role: 'user_default' });
 
     return NextResponse.json({ message: "Usuário criado com sucesso", uid: userRecord.uid }, { status: 201 });
 
