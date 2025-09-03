@@ -2,7 +2,7 @@
 
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { adminAuth } from '@/lib/firebase-admin'
+import { getAdminAuth } from '@/lib/firebase-admin' // Use the getter function
 
 export async function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get('session')?.value
@@ -29,6 +29,8 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
+    // Initialize auth on-demand inside the middleware
+    const adminAuth = getAdminAuth();
     await adminAuth.verifySessionCookie(sessionCookie, true)
     if (isAuthPage) {
       return NextResponse.redirect(new URL('/', request.url))
