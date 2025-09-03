@@ -19,16 +19,17 @@ export function defineAbilitiesFor(user: User | null) {
 
   if (user) {
     if (user.role === 'admin') {
-      // Admins podem gerenciar tudo em toda a aplicação.
-      // 'manage' é uma palavra-chave do CASL que representa qualquer ação.
-      // 'all' é uma palavra-chave do CASL que representa qualquer assunto.
+      // Admins podem gerenciar tudo E acessar todos os painéis.
       can('manage', 'all');
+      can('access', 'AdminPanel');
+      can('access', 'Dashboard');
+      can('access', 'BackgroundRemover');
+      can('access', 'TodoList');
     } else if (user.role === 'user_default') {
       // Usuários padrão podem acessar o painel geral (hub de módulos).
       can('access', 'Dashboard');
 
       // Eles estão explicitamente proibidos de acessar os módulos individuais.
-      // Isso impede a navegação mesmo que saibam a URL.
       cannot('access', 'BackgroundRemover');
       cannot('access', 'TodoList');
       cannot('access', 'AdminPanel');
