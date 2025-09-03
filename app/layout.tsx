@@ -2,7 +2,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/components/auth/AuthProvider"; // Importar o AuthProvider
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import Header from "@/components/layout/header"; // Importar o Header
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,8 +20,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {/* Envolver a aplicação com o AuthProvider */}
         <AuthProvider>
+          <Header /> {/* Renderizar o Header aqui */}
           {children}
         </AuthProvider>
       </body>
