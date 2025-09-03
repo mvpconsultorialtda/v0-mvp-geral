@@ -1,63 +1,47 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { getAdminAuth } from '@/lib/firebase-admin' // Use the getter function
 
-export const runtime = 'nodejs'; // Force Node.js runtime
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
-  const sessionCookie = request.cookies.get('session')?.value
-  const { pathname } = request.nextUrl
+// 1. Especifique as rotas que você quer proteger
+const protectedRoutes = ['/admin', '/modules', '/profile'];
 
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
-  const isAuthApi = pathname.startsWith('/api/auth')
+export function middleware(request: NextRequest) {
+  // 2. Obtenha o token da sessão dos cookies
+  const sessionToken = request.cookies.get('session')?.value;
 
-  if (isAuthApi) {
-    return NextResponse.next()
+  const { pathname } = request.nextUrl;
+
+  // 3. Verifique se a rota atual é uma das rotas protegidas
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+
+  if (isProtectedRoute) {
+    // 4. Se não houver token, redirecione para a página de login
+    if (!sessionToken) {
+      const loginUrl = new URL('/login', request.url);
+      // Adiciona um parâmetro 'redirect' para que o usuário volte para a página que tentou acessar após o login
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // (Opcional) Aqui você poderia adicionar uma lógica para verificar a validade do token (ex: decodificá-lo)
+    // Se o token for inválido, redirecione para o login também.
   }
 
-  if (!sessionCookie) {
-    if (isAuthPage) {
-      return NextResponse.next()
-    }
-    if (pathname.startsWith('/api')) {
-      return new NextResponse(
-        JSON.stringify({ success: false, message: 'Authentication required.' }),
-        { status: 401, headers: { 'content-type': 'application/json' } }
-      )
-    }
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  try {
-    // Initialize auth on-demand inside the middleware
-    const adminAuth = getAdminAuth();
-    await adminAuth.verifySessionCookie(sessionCookie, true)
-    if (isAuthPage) {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-    return NextResponse.next()
-  } catch (error) {
-    if (pathname.startsWith('/api')) {
-      const response = new NextResponse(
-        JSON.stringify({ success: false, message: 'Authentication failed.' }),
-        { status: 401, headers: { 'content-type': 'application/json' } }
-      )
-      response.cookies.delete('session')
-      return response
-    }
-
-    const response = isAuthPage
-      ? NextResponse.next()
-      : NextResponse.redirect(new URL('/login', request.url))
-
-    response.cookies.delete('session')
-
-    return response
-  }
+  // 5. Se a rota não for protegida ou se o usuário tiver um token, continue a navegação
+  return NextResponse.next();
 }
 
+// Configuração do matcher para definir onde o middleware será executado
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)',
+    /*
+     * Corresponde a todos os caminhos de requisição, exceto para:
+     * - /api (rotas de API)
+     * - /_next/static (arquivos estáticos)
+     * - /_next/image (arquivos de otimização de imagem)
+     * - favicon.ico (ícone do site)
+     * Isso evita que o middleware execute em requisições de recursos desnecessários.
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
-}
+};
