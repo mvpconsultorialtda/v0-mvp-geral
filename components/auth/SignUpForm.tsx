@@ -8,13 +8,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select' // Importar Select
 import Link from 'next/link'
 
 export default function SignUpForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState('user') // Estado para o tipo de usuário
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -30,8 +28,8 @@ export default function SignUpForm() {
         headers: {
           'Content-Type': 'application/json',
         },
-        // Enviar email, senha e role para a API
-        body: JSON.stringify({ email, password, role }),
+        // Apenas email e senha são enviados. O role será definido no backend.
+        body: JSON.stringify({ email, password }),
       })
 
       const signupData = await signupRes.json()
@@ -94,19 +92,7 @@ export default function SignUpForm() {
               placeholder="********"
             />
           </div>
-          {/* Campo de Seleção para o Tipo de Usuário */}
-          <div className="space-y-2">
-            <Label htmlFor="role">Tipo de Usuário</Label>
-            <Select onValueChange={setRole} defaultValue={role}>
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="user">Usuário</SelectItem>
-                <SelectItem value="admin">Administrador</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* O campo de seleção de Role foi removido intencionalmente */}
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={loading}>

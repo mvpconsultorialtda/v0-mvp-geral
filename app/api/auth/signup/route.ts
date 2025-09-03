@@ -9,9 +9,14 @@ import { createUser } from "@/src/modules/authentication/core"; // The business 
  * with the project-specific Firebase Admin instance.
  */
 export async function POST(req: NextRequest) {
-  const { email, password, role } = await req.json();
+  const { email, password } = await req.json();
 
-  // Get the auth instance and delegate user creation to the core module.
+  // Define o role padrão para novos usuários. Isso garante que os usuários 
+  // não possam atribuir a si mesmos roles elevados no momento do cadastro.
+  const defaultRole = 'user_default';
+
+  // Obtém a instância de autenticação e delega a criação do usuário para o módulo principal,
+  // forçando a atribuição do role padrão.
   const adminAuth = getAdminAuth();
-  return await createUser(adminAuth, email, password, role);
+  return await createUser(adminAuth, email, password, defaultRole);
 }
