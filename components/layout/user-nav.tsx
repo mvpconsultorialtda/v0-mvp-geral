@@ -25,6 +25,7 @@ export function UserNav() {
     })
     if (res.ok) {
       router.push('/login')
+      router.refresh()
     }
   }
 
