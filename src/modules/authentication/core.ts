@@ -12,9 +12,10 @@ type AdminAuth = typeof FirebaseAuth;
  * @param auth - The Firebase Admin Auth instance.
  * @param email - The user's email.
  * @param password - The user's password.
+ * @param role - The user's role (e.g., 'admin' or 'user'). Defaults to 'user'.
  * @returns A NextResponse object indicating success or failure.
  */
-export async function createUser(auth: AdminAuth, email: string, password: string) {
+export async function createUser(auth: AdminAuth, email: string, password: string, role: string = 'user') {
   // Basic server-side validation
   if (!email || !password) {
     return NextResponse.json({ message: "Email e senha são obrigatórios." }, { status: 400 });
@@ -29,8 +30,9 @@ export async function createUser(auth: AdminAuth, email: string, password: strin
       password,
     });
 
-    // Set a default role for the new user.
-    await auth.setCustomUserClaims(userRecord.uid, { role: 'user_default' });
+    // Set the user's role as a custom claim.
+    const newRole = role === 'admin' ? 'admin' : 'user';
+    await auth.setCustomUserClaims(userRecord.uid, { role: newRole });
 
     return NextResponse.json({ message: "Usuário criado com sucesso", uid: userRecord.uid }, { status: 201 });
 

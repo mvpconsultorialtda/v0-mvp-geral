@@ -9,9 +9,9 @@ import { createUser } from "@/src/modules/authentication/core"; // The business 
  * with the project-specific Firebase Admin instance.
  */
 export async function POST(req: NextRequest) {
-  const { email, password } = await req.json();
+  const { email, password, role } = await req.json();
 
   // Get the auth instance and delegate user creation to the core module.
   const adminAuth = getAdminAuth();
-  return await createUser(adminAuth, email, password);
+  return await createUser(adminAuth, email, password, role);
 }
