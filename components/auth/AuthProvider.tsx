@@ -4,28 +4,27 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { onAuthStateChanged, User } from 'firebase/auth'
 import { auth } from '@/lib/firebase-client'
 
-// Define the shape of the context data
+// Define a forma dos dados do contexto
 interface AuthContextType {
   user: User | null
-  loading: boolean
+  authLoading: boolean // Renomeado de 'loading' para clareza
   isReady: boolean
   isAdmin: boolean
 }
 
-// Create the context
+// Cria o contexto
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Create the provider component
+// Cria o componente provedor
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true) // Loading state for initial auth check
-  const [isReady, setIsReady] = useState(false) // State to track if auth check has completed
+  const [authLoading, setAuthLoading] = useState(true) // Renomeado. Permanece true até a primeira verificação.
+  const [isReady, setIsReady] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user)
-      setLoading(true) // Set loading true when user state changes
 
       if (user) {
         try {
@@ -34,30 +33,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error) {
           console.error('Error fetching user token:', error)
           setIsAdmin(false)
-        } finally {
-          setLoading(false) // Set loading to false after token check
         }
       } else {
         setIsAdmin(false)
-        setLoading(false) // No user, so not loading
       }
-      setIsReady(true) // Auth check is complete
+      
+      // A verificação de autenticação terminou, então o carregamento não é mais necessário.
+      setAuthLoading(false)
+      setIsReady(true)
     })
 
+    // Cleanup
     return () => unsubscribe()
-  }, [])
+  }, []) // O array vazio garante que isso rode apenas uma vez
 
   const value = {
     user,
-    loading,
-    isReady, // Expose isReady state
+    authLoading, // Expondo o novo estado de loading
+    isReady,
     isAdmin,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-// Create a hook to use the auth context
+// Cria um hook para usar o contexto de autenticação
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (context === undefined) {

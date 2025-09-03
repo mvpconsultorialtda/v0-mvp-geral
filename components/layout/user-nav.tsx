@@ -19,7 +19,7 @@ import { auth } from '@/lib/firebase-client'
 import { Spinner } from '../ui/spinner'
 
 export function UserNav() {
-  const { user, isAdmin, loading, isReady } = useAuth()
+  const { user, isAdmin, authLoading, isReady } = useAuth() // Alterado: loading -> authLoading
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -48,7 +48,8 @@ export function UserNav() {
     }
   }
 
-  if (loading || !isReady) {
+  // Alterado: loading -> authLoading
+  if (authLoading || !isReady) {
     return <Spinner size="small" />
   }
 
