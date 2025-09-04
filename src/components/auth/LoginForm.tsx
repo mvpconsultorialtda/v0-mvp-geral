@@ -36,7 +36,6 @@ export default function LoginForm() {
 
       if (res.ok) {
         router.push('/')
-        router.refresh() // Garante que o estado do servidor seja atualizado
       } else {
         throw new Error('Failed to create session')
       }
