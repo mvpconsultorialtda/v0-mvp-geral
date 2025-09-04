@@ -1,34 +1,22 @@
 'use client';
 
-import { AuthProvider, useAuth } from "@/src/components/auth/AuthProvider";
-import { Header } from "@/src/components/layout/header";
-import { AbilityProvider } from "@/src/modules/access-control/AbilityProvider";
-import { ReactNode } from "react";
+import { AuthProvider } from '@/src/components/auth/AuthProvider';
+import { AbilityProvider } from '@/src/modules/access-control/AbilityProvider';
+import { ThemeProvider } from '@/src/components/theme-provider';
 
-// Componente intermediário para garantir que a autenticação está pronta
-function AppContent({ children }: { children: ReactNode }) {
-  const { isReady } = useAuth();
-
-  // Não renderiza nada até que o estado de autenticação seja verificado.
-  // Isso evita que componentes filhos tentem usar contextos (como o de habilidade)
-  // antes que eles estejam prontos, especialmente durante o build estático.
-  if (!isReady) {
-    return null; // Ou um componente de loading global
-  }
-
+/**
+ * Componente central que envolve a aplicação com todos os provedores de contexto necessários.
+ * A ordem dos provedores é importante: AuthProvider deve vir antes de AbilityProvider.
+ */
+export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    (<AbilityProvider>
-      <Header />
-      {children}
-    </AbilityProvider>)
-  );
-}
-
-// Componente principal que agrupa todos os provedores
-export function Providers({ children }: { children: ReactNode }) {
-  return (
-    <AuthProvider>
-      <AppContent>{children}</AppContent>
-    </AuthProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <AuthProvider>
+        {/* AbilityProvider depende do AuthProvider, então ele deve vir dentro dele */}
+        <AbilityProvider>
+          {children}
+        </AbilityProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
