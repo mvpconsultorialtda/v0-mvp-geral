@@ -8,8 +8,7 @@ import { Spinner } from '@/src/components/ui/spinner';
 
 interface AppContextType {
   user: User | null;
-  isAdmin: boolean;
-  ability: AppAbility | null;
+  ability: AppAbility;
   authLoading: boolean;
 }
 
@@ -17,26 +16,27 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [ability, setAbility] = useState<AppAbility | null>(null);
+  const [ability, setAbility] = useState<AppAbility>(defineAbilitiesFor(null)); // Habilidade inicial de convidado
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // FOR DEVELOPMENT ONLY: Force admin status for a specific user.
-        // In production, this should be handled by Firebase custom claims.
-        const isDevAdmin = firebaseUser.email === 'test@test.com';
         const tokenResult = await firebaseUser.getIdTokenResult();
-        const userIsAdmin = !!tokenResult.claims.admin || isDevAdmin;
+        const userIsAdmin = !!tokenResult.claims.admin;
         
+        // O objeto do usuário a ser passado para as habilidades
+        const permissionUser = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          isAdmin: userIsAdmin,
+        };
+
         setUser(firebaseUser);
-        setIsAdmin(userIsAdmin);
-        setAbility(defineAbilitiesFor(firebaseUser, userIsAdmin));
+        setAbility(defineAbilitiesFor(permissionUser));
       } else {
         setUser(null);
-        setIsAdmin(false);
-        setAbility(defineAbilitiesFor(null, false));
+        setAbility(defineAbilitiesFor(null));
       }
       setAuthLoading(false);
     });
@@ -53,7 +53,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppContext.Provider value={{ user, isAdmin, ability, authLoading }}>
+    <AppContext.Provider value={{ user, ability: ability!, authLoading }}>
       {children}
     </AppContext.Provider>
   );

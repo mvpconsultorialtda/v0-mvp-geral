@@ -1,45 +1,54 @@
-
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin";
-import { verifySession } from "@/src/lib/session"; // Importa a nova função de verificação de sessão
-import { defineAbilitiesFor } from "@/src/modules/access-control/ability"; // Importa as definições de habilidade do CASL
+import { getAuth } from "firebase-admin/auth";
+import { defineAbilitiesFor } from "@/src/modules/access-control/ability";
 
-// Função auxiliar para verificar permissões de administrador usando CASL
-async function checkAdminPermissions(req: NextRequest) {
-  const user = await verifySession(req);
-
-  if (!user) {
+// Função auxiliar para verificar as permissões do solicitante
+async function checkPermissions(req: NextRequest) {
+  const authorization = req.headers.get("Authorization");
+  if (!authorization?.startsWith("Bearer ")) {
     return { authorized: false, response: NextResponse.json({ message: "Unauthorized" }, { status: 401 }) };
   }
 
-  const ability = defineAbilitiesFor(user);
+  const token = authorization.split("Bearer ")[1];
+  try {
+    const decodedToken = await getAuth().verifyIdToken(token);
+    
+    // FOR DEVELOPMENT ONLY: A simulação de admin está centralizada em `defineAbilitiesFor`
+    const permissionUser = {
+        uid: decodedToken.uid,
+        email: decodedToken.email,
+        isAdmin: !!decodedToken.admin // Usa a claim real se existir
+    };
 
-  // Verifica se o usuário tem a permissão para 'manage' (gerenciar) o assunto 'User'.
-  // A role 'admin' tem a permissão 'manage' em 'all', que passa nesta verificação.
-  if (ability.cannot('manage', 'User')) {
-    return { authorized: false, response: NextResponse.json({ message: "Forbidden" }, { status: 403 }) };
+    const ability = defineAbilitiesFor(permissionUser);
+
+    if (ability.cannot('manage', 'User')) {
+      return { authorized: false, response: NextResponse.json({ message: "Forbidden" }, { status: 403 }) };
+    }
+
+    return { authorized: true, response: null };
+
+  } catch (error) {
+    console.error("Error verifying token:", error);
+    return { authorized: false, response: NextResponse.json({ message: "Invalid token" }, { status: 401 }) };
   }
-
-  return { authorized: true, response: null };
 }
 
-
 export async function GET(req: NextRequest) {
-  // 1. Verifica as permissões usando o novo sistema centralizado.
-  const { authorized, response } = await checkAdminPermissions(req);
+  const { authorized, response } = await checkPermissions(req);
   if (!authorized) {
     return response;
   }
 
   try {
-    // 2. Continua com a lógica de negócio se a permissão for concedida.
     const adminAuth = getAdminAuth();
     const listUsersResult = await adminAuth.listUsers(1000);
     
     const users = listUsersResult.users.map(user => ({
       uid: user.uid,
       email: user.email,
-      role: user.customClaims?.role || 'user', 
+      role: user.customClaims?.admin ? 'admin' : 'user', 
     }));
 
     return NextResponse.json({ users }, { status: 200 });
@@ -51,14 +60,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    // 1. Verifica as permissões usando o novo sistema centralizado.
-    const { authorized, response } = await checkAdminPermissions(req);
+    const { authorized, response } = await checkPermissions(req);
     if (!authorized) {
       return response;
     }
 
     try {
-        // 2. Continua com a lógica de negócio se a permissão for concedida.
         const { uid, role } = await req.json();
 
         if (!uid || !role) {
@@ -66,7 +73,7 @@ export async function POST(req: NextRequest) {
         }
 
         const adminAuth = getAdminAuth();
-        await adminAuth.setCustomUserClaims(uid, { role });
+        await adminAuth.setCustomUserClaims(uid, { admin: role === 'admin' });
 
         return NextResponse.json({ message: `Role do usuário ${uid} atualizada para ${role} com sucesso.` }, { status: 200 });
 

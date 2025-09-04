@@ -1,11 +1,18 @@
 import { AbilityBuilder, createMongoAbility } from '@casl/ability';
 import { User } from 'firebase/auth';
 
+// Define a estrutura de um usuário para as habilidades (simplificada)
+type PermissionUser = {
+  uid: string;
+  email?: string | null;
+  isAdmin: boolean;
+};
+
 // Define as ações que um usuário pode realizar
 export type Actions = 'access' | 'create' | 'read' | 'update' | 'delete' | 'manage';
 
 // Define os "assuntos" ou entidades do sistema
-export type Subjects = 'AdminPanel' | 'Todo' | 'all';
+export type Subjects = 'AdminPanel' | 'Todo' | 'User' | 'all';
 
 // Tipagem para o objeto de habilidade
 export type AppAbility = ReturnType<typeof defineAbilitiesFor>;
@@ -13,19 +20,23 @@ export type AppAbility = ReturnType<typeof defineAbilitiesFor>;
 /**
  * Define as permissões (habilidades) para um determinado usuário.
  *
- * @param user O objeto de usuário do Firebase.
- * @param isAdmin Um booleano indicando se o usuário é administrador.
+ * @param user O objeto de usuário (pode ser do Firebase Auth ou do token decodificado).
  * @returns Um objeto de habilidade do CASL.
  */
-export const defineAbilitiesFor = (user: User | null, isAdmin: boolean) => {
+export const defineAbilitiesFor = (user: Partial<PermissionUser> | null) => {
   const { can, build } = new AbilityBuilder(createMongoAbility);
+
+  // FOR DEVELOPMENT ONLY: Simula o status de admin para um email específico.
+  // Em produção, o status de admin deve vir de uma fonte segura (ex: custom claims do Firebase).
+  const isDevAdmin = user?.email === 'test@test.com';
+  const effectiveIsAdmin = user?.isAdmin || isDevAdmin;
 
   if (user) {
     // Regras para todos os usuários logados
     can('access', 'Todo');
 
     // Regras específicas para administradores
-    if (isAdmin) {
+    if (effectiveIsAdmin) {
       can('access', 'AdminPanel');
       can('manage', 'all'); // Admins podem gerenciar tudo
     }
