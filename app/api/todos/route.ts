@@ -4,7 +4,7 @@ import {
   readTodoListData,
   writeTodoListData,
 } from "@/src/modules/todo-list/core";
-import { verifySession } from "@/lib/session"; // Importa a função de verificação de sessão
+import { verifySession } from "@/src/lib/session"; // Importa a função de verificação de sessão
 import { defineAbilitiesFor } from "@/src/modules/access-control/ability"; // Importa as definições de habilidade
 
 // Função auxiliar para verificar permissões em qualquer requisição

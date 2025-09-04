@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin";
-import { verifySession } from "@/lib/session"; // Importa a nova função de verificação de sessão
+import { verifySession } from "@/src/lib/session"; // Importa a nova função de verificação de sessão
 import { defineAbilitiesFor } from "@/src/modules/access-control/ability"; // Importa as definições de habilidade do CASL
 
 // Função auxiliar para verificar permissões de administrador usando CASL

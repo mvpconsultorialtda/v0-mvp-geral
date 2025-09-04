@@ -2,7 +2,7 @@
 
 import { AuthProvider, useAuth } from "@/src/components/providers/auth-provider";
 import { Header } from "@/components/layout/header";
-import { AbilityProvider } from "@/modules/access-control/AbilityProvider";
+import { AbilityProvider } from "@/src/modules/access-control/AbilityProvider";
 import { ReactNode } from "react";
 
 // Componente intermediário para garantir que a autenticação está pronta
