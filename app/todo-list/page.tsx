@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
@@ -19,6 +18,7 @@ import { TodoItem } from '@/src/modules/todo-list/components/TodoItem'
 import { TodoForm } from '@/src/modules/todo-list/components/TodoForm'
 import { TodoFilters } from '@/src/modules/todo-list/components/TodoFilters'
 import type { Todo, TodoFilter } from '@/src/modules/todo-list/types'
+import { GoBackButton } from '@/src/components/ui/go-back-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -221,6 +221,7 @@ export default function TodoListPage() {
   return (
     <div className='min-h-screen bg-background p-4'>
       <div className='max-w-7xl mx-auto'>
+        <GoBackButton />
         <div className='flex items-center justify-between mb-6'>
           <div className='flex items-center gap-4'>
             <h1 className='text-2xl font-bold'>Minhas Tarefas</h1>
