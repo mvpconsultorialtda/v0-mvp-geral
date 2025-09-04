@@ -1,4 +1,4 @@
-'''"use client"
+"use client"
 
 import { LogOut } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/src/components/ui/avatar'
@@ -15,10 +15,9 @@ import {
 import { useRouter } from 'next/navigation'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase-client'
-import { useApp } from '@/app/AppProvider' // Importa o novo hook consolidado
+import { useApp } from '@/app/AppProvider'
 
 export function UserNav() {
-  // Usa o novo contexto consolidado
   const { user, ability } = useApp()
   const router = useRouter()
 
@@ -30,17 +29,10 @@ export function UserNav() {
       console.error('Erro no processo de logout: ', error)
     } finally {
       router.push('/login')
-      router.refresh()
     }
   }
 
-  // A lógica de carregamento foi movida para o AppProvider.
-  // Se chegamos aqui, a autenticação já foi resolvida.
-
-  if (!user || !ability) {
-    // Se não há usuário, mostra os botões de login/cadastro.
-    // Esta verificação é uma segurança, pois o AppProvider já deve ter redirecionado
-    // se necessário, mas é bom ter uma UI fallback.
+  if (!user) {
     return (
       <div className="flex items-center space-x-2">
         <Button onClick={() => router.push('/login')}>Login</Button>
@@ -73,13 +65,13 @@ export function UserNav() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {ability && ability.can('access', 'AdminPanel') && (
         <DropdownMenuGroup>
-          {ability.can('access', 'AdminPanel') && (
             <DropdownMenuItem onClick={() => router.push('/admin')}>
               Painel do Admin
             </DropdownMenuItem>
-          )}
         </DropdownMenuGroup>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
@@ -89,4 +81,3 @@ export function UserNav() {
     </DropdownMenu>
   )
 }
-'''
