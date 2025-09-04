@@ -1,9 +1,10 @@
+
 import { getAdminAuth } from './firebase-admin';
 import { NextRequest } from 'next/server';
 
 // Define a estrutura esperada do usuário extraído do token
 type AuthenticatedUser = {
-  id: string;
+  uid: string; // <-- Corrigido de 'id' para 'uid' para corresponder ao CASL e Firebase
   role: string;
   email?: string;
 };
@@ -13,7 +14,7 @@ type AuthenticatedUser = {
  * 
  * @param request A requisição Next.js que contém os cookies.
  * @returns Uma promessa que resolve para os dados do usuário autenticado 
- *          (incluindo id e role) ou null se o token for inválido ou ausente.
+ *          (incluindo uid e role) ou null se o token for inválido ou ausente.
  */
 export async function verifySession(request: NextRequest): Promise<AuthenticatedUser | null> {
   const sessionToken = request.cookies.get('session')?.value;
@@ -30,7 +31,7 @@ export async function verifySession(request: NextRequest): Promise<Authenticated
     // O 'role' é esperado como uma custom claim no token.
     // Se não estiver presente, o acesso pode ser negado ou um role padrão pode ser assumido.
     const user: AuthenticatedUser = {
-      id: decodedToken.uid,
+      uid: decodedToken.uid, // <-- Corrigido de 'id' para 'uid'
       role: decodedToken.role || 'user_default', // Garante que sempre haverá um role
       email: decodedToken.email,
     };
