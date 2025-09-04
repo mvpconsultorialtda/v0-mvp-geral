@@ -24,8 +24,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // FOR DEVELOPMENT ONLY: Force admin status for a specific user.
+        // In production, this should be handled by Firebase custom claims.
+        const isDevAdmin = firebaseUser.email === 'test@test.com';
         const tokenResult = await firebaseUser.getIdTokenResult();
-        const userIsAdmin = !!tokenResult.claims.admin;
+        const userIsAdmin = !!tokenResult.claims.admin || isDevAdmin;
         
         setUser(firebaseUser);
         setIsAdmin(userIsAdmin);
