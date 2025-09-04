@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { onAuthStateChanged, User } from 'firebase/auth'
-import { auth } from '@/lib/firebase-client'
+import { auth } from '@/src/lib/firebase-client'
 
 // Define a forma dos dados do contexto
 interface AuthContextType {
