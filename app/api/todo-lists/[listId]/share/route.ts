@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import { getTodoListById, saveTodoList } from "@/src/modules/todo-list/core";
+import { getTodoListById, updateTodoList } from "@/src/modules/todo-list/core";
 import { verifySession } from "@/src/lib/session";
 import { defineAbilitiesFor } from "@/src/modules/access-control/ability";
 import * as fs from 'fs';
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     // Adiciona ou atualiza a permissão do usuário no mapa de controle de acesso.
     todoList.accessControl[userToShareWith.uid] = permission;
 
-    saveTodoList(listId, todoList);
+    updateTodoList(listId, todoList);
 
     return NextResponse.json({ message: `List shared with ${email} as ${permission}.` }, { status: 200 });
 

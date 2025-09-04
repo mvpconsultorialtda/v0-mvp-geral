@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import { getTodoLists, saveTodoList } from "@/src/modules/todo-list/core";
+import { getTodoLists, createTodoList } from "@/src/modules/todo-list/core";
 import { verifySession } from "@/src/lib/session";
 import { defineAbilitiesFor } from "@/src/modules/access-control/ability";
 import { TodoList } from "@/src/modules/todo-list/types";
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       todos: [],
     };
 
-    saveTodoList(newListId, newList);
+    createTodoList(newListId, newList);
 
     return NextResponse.json({ message: "List created successfully", listId: newListId }, { status: 201 });
   } catch (error) {

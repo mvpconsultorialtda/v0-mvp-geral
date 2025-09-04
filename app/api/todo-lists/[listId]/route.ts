@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import { getTodoListById, saveTodoList } from "@/src/modules/todo-list/core";
+import { getTodoListById, updateTodoList } from "@/src/modules/todo-list/core";
 import { verifySession } from "@/src/lib/session";
 import { defineAbilitiesFor } from "@/src/modules/access-control/ability";
 import { TodoItem } from "@/src/modules/todo-list/types";
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     };
 
     todoList.todos.push(newTodo);
-    saveTodoList(listId, todoList);
+    updateTodoList(listId, todoList);
 
     return NextResponse.json({ message: "Todo added successfully", todo: newTodo }, { status: 201 });
   } catch (error) {
