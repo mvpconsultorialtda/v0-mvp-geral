@@ -33,6 +33,8 @@ function writeDatabase(data: AppDatabase) {
     fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), "utf-8");
   } catch (error) {
     console.error("Failed to write to database:", error);
+    // Lança o erro para que a API possa capturá-lo e responder adequadamente.
+    throw error;
   }
 }
 
