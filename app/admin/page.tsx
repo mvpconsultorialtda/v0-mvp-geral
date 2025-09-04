@@ -1,7 +1,7 @@
 
 import React from 'react';
-import AdminGuard from '@/components/auth/AdminGuard';
-import UserManagement from '@/components/admin/UserManagement'; // Importar o componente
+import AdminGuard from '@/src/components/auth/AdminGuard';
+import UserManagement from '@/src/components/admin/UserManagement'; // Importar o componente
 
 export default function AdminPage() {
   return (

@@ -6,8 +6,8 @@ import { backgroundRemover } from "@/src/modules/background-remover"
 import { ImageUploader } from "@/src/modules/background-remover/components/ImageUploader"
 import { ImageEditor } from "@/src/modules/background-remover/components/ImageEditor"
 import type { ProcessedImage } from "@/src/modules/background-remover/types"
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card } from "@/src/components/ui/card"
+import { Button } from "@/src/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 
 export default function BackgroundRemoverPage() {

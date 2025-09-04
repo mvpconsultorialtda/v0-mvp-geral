@@ -12,9 +12,9 @@ import {
   Moon,
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { useToast } from '@/components/ui/use-toast'
+import { Button } from '@/src/components/ui/button'
+import { Separator } from '@/src/components/ui/separator'
+import { useToast } from '@/src/components/ui/use-toast'
 import { TodoItem } from '@/src/modules/todo-list/components/TodoItem'
 import { TodoForm } from '@/src/modules/todo-list/components/TodoForm'
 import { TodoFilters } from '@/src/modules/todo-list/components/TodoFilters'

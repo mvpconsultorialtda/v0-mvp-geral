@@ -1,8 +1,8 @@
 'use client';
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@/src/components/ui/button";
+import { Card } from "@/src/components/ui/card";
 import { useAbility } from "@/src/modules/access-control/AbilityContext";
 import { ReactNode } from "react";
 

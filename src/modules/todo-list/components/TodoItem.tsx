@@ -1,11 +1,11 @@
 "use client"
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "@/src/components/ui/button"
+import { Card } from "@/src/components/ui/card"
+import { Badge } from "@/src/components/ui/badge"
 import { Trash2, Edit, Calendar, Clock } from "lucide-react"
 import type { Todo, TodoStatus } from "../types"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select"
 
 interface TodoItemProps {
   todo: Todo

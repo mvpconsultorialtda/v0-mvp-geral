@@ -3,30 +3,45 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signInWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '@/lib/firebase-client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import { auth } from '@/src/lib/firebase-client'
+import { Button } from '@/src/components/ui/button'
+import { Input } from '@/src/components/ui/input'
+import { Label } from '@/src/components/ui/label'
+import { Card, CardContent, CardFooter, CardHeader } from '@/src/components/ui/card'
 import Link from 'next/link'
 
-export default function LoginForm() {
+export default function SignUpForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
 
     try {
+      const signupRes = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Apenas email e senha são enviados. O role será definido no backend.
+        body: JSON.stringify({ email, password }),
+      })
+
+      const signupData = await signupRes.json()
+
+      if (!signupRes.ok) {
+        throw new Error(signupData.message || 'Failed to create user.')
+      }
+
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
       const token = await userCredential.user.getIdToken()
 
-      const res = await fetch('/api/auth/login', {
+      const loginRes = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -34,15 +49,15 @@ export default function LoginForm() {
         body: JSON.stringify({ idToken: token }),
       })
 
-      if (res.ok) {
+      if (loginRes.ok) {
         router.push('/')
-        router.refresh() // Garante que o estado do servidor seja atualizado
+        router.refresh()
       } else {
-        throw new Error('Failed to create session')
+        const loginData = await loginRes.json()
+        throw new Error(loginData.message || 'Failed to create session')
       }
     } catch (error: any) {
-      setError('Email ou senha inválidos. Por favor, tente novamente.')
-      console.error(error)
+      setError(error.message)
     } finally {
       setLoading(false)
     }
@@ -50,7 +65,7 @@ export default function LoginForm() {
 
   return (
     <Card>
-      <form onSubmit={handleLogin}>
+      <form onSubmit={handleSignUp}>
         <CardHeader>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
         </CardHeader>
@@ -77,15 +92,16 @@ export default function LoginForm() {
               placeholder="********"
             />
           </div>
+          {/* O campo de seleção de Role foi removido intencionalmente */}
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? 'Cadastrando...' : 'Cadastrar'}
           </Button>
           <p className="text-sm text-center text-muted-foreground">
-            Não tem uma conta?{' '}
-            <Link href="/signup" className="text-primary hover:underline">
-              Cadastre-se
+            Já tem uma conta?{' '}
+            <Link href="/login" className="text-primary hover:underline">
+              Faça login
             </Link>
           </p>
         </CardFooter>

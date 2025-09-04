@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User, onAuthStateChanged, IdTokenResult } from 'firebase/auth'
 import { auth } from '@/lib/firebase-client'
-import { Spinner } from '@/components/ui/spinner'
+import { Spinner } from '@/src/components/ui/spinner'
 
 interface AuthContextType {
   user: User | null

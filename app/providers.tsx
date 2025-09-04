@@ -1,7 +1,7 @@
 "use client";
 
 import { AuthProvider, useAuth } from "@/src/components/providers/auth-provider";
-import { Header } from "@/components/layout/header";
+import { Header } from "@/src/components/layout/header";
 import { AbilityProvider } from "@/src/modules/access-control/AbilityProvider";
 import { ReactNode } from "react";
 

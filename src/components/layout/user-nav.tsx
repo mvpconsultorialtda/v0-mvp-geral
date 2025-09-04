@@ -1,9 +1,9 @@
 'use client'
 
 import { LogOut } from 'lucide-react'
-import { useAuth } from '@/components/auth/AuthProvider'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
+import { useAuth } from '@/src/components/providers/auth-provider'
+import { Avatar, AvatarFallback, AvatarImage } from '@/src/components/ui/avatar'
+import { Button } from '@/src/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,11 +12,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/src/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase-client'
-import { Spinner } from '../ui/spinner'
+import { Spinner } from '@/src/components/ui/spinner'
 import { useAbility } from '@/src/modules/access-control/AbilityContext' // Importa o hook do CASL
 
 export function UserNav() {

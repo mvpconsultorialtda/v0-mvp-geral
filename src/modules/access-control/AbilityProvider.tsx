@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/components/auth/AuthProvider";
+import { useAuth } from "@/src/components/providers/auth-provider";
 import { ReactNode } from "react";
 import { AbilityContext } from "./AbilityContext";
 import { defineAbilitiesFor } from "./ability";
