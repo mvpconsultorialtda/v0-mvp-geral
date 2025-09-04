@@ -1,48 +1,87 @@
 
 import fs from "fs";
 import path from "path";
+import { TodoList } from "./types"; // Importa o tipo TodoList
 
-// The path to the JSON file is determined relative to the current working directory
-const filePath = path.resolve(process.cwd(), "data/todos.json");
+// Define o caminho para o novo arquivo de banco de dados JSON
+const dbPath = path.resolve(process.cwd(), "data/db.json");
 
-/**
- * Reads the entire todo list data structure from the JSON file.
- * If the file or directory doesn't exist, it returns a default initial state.
- * @returns The parsed data from the JSON file or a default structure.
- */
-export function readTodoListData() {
+// Estrutura de dados esperada para o nosso "banco de dados" em JSON
+interface AppDatabase {
+  todoLists: Record<string, TodoList>;
+}
+
+// Função para ler todo o conteúdo do banco de dados.
+function readDatabase(): AppDatabase {
   try {
-    // Ensure the directory exists
-    const dir = path.dirname(filePath);
+    // Garante que o diretório de dados exista
+    const dir = path.dirname(dbPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    // Read the file
-    const jsonData = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(jsonData);
+    // Tenta ler o arquivo do banco de dados
+    const jsonData = fs.readFileSync(dbPath, "utf-8");
+    return JSON.parse(jsonData) as AppDatabase;
   } catch (error) {
-    // If the file does not exist, return a default structure
-    return { todos: [], categories: [], lastUpdated: new Date().toISOString() };
+    // Se o arquivo não existir ou houver um erro de parsing, retorna uma estrutura vazia
+    return { todoLists: {} };
   }
 }
 
-/**
- * Writes the entire todo list data structure to the JSON file.
- * @param data - The data object to be serialized and written to the file.
- */
-export function writeTodoListData(data: any) {
+// Função para escrever o conteúdo completo no banco de dados.
+function writeDatabase(data: AppDatabase) {
   try {
-    // Ensure the directory exists before writing
-    const dir = path.dirname(filePath);
+    const dir = path.dirname(dbPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
 
-    // Write the file
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), "utf-8");
   } catch (error) {
-    // In a real app, you'd want more robust error handling here
-    console.error("Error writing data:", error);
+    console.error("Falha ao escrever no banco de dados:", error);
+    // Em uma aplicação real, um tratamento de erro mais robusto seria necessário
   }
+}
+
+// --- Funções Auxiliares para Manipulação de Listas de Tarefas ---
+
+/**
+ * Retorna todas as listas de tarefas do banco de dados.
+ * @returns Um objeto contendo todas as listas de tarefas.
+ */
+export function getTodoLists() {
+  const db = readDatabase();
+  return db.todoLists;
+}
+
+/**
+ * Busca uma única lista de tarefas pelo seu ID.
+ * @param listId - O ID da lista de tarefas a ser recuperada.
+ * @returns A lista de tarefas encontrada ou null se não existir.
+ */
+export function getTodoListById(listId: string): TodoList | null {
+  const db = readDatabase();
+  return db.todoLists[listId] || null;
+}
+
+/**
+ * Adiciona ou atualiza uma lista de tarefas no banco de dados.
+ * @param listId - O ID da lista a ser salva.
+ * @param todoList - O objeto da lista de tarefas a ser salvo.
+ */
+export function saveTodoList(listId: string, todoList: TodoList) {
+  const db = readDatabase();
+  db.todoLists[listId] = todoList;
+  writeDatabase(db);
+}
+
+/**
+ * Deleta uma lista de tarefas do banco de dados.
+ * @param listId - O ID da lista de tarefas a ser deletada.
+ */
+export function deleteTodoList(listId: string) {
+  const db = readDatabase();
+  delete db.todoLists[listId];
+  writeDatabase(db);
 }

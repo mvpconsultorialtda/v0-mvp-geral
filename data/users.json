@@ -1,0 +1,15 @@
+
+{
+  "user1@test.com": {
+    "uid": "user1_uid"
+  },
+  "user2@test.com": {
+    "uid": "user2_uid"
+  },
+  "editor@test.com": {
+    "uid": "editor_uid"
+  },
+  "viewer@test.com": {
+    "uid": "viewer_uid"
+  }
+}
