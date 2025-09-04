@@ -1,6 +1,6 @@
+'''"use client"
 
 import { LogOut } from 'lucide-react'
-import { useAuth } from '@/src/components/providers/auth-provider'
 import { Avatar, AvatarFallback, AvatarImage } from '@/src/components/ui/avatar'
 import { Button } from '@/src/components/ui/button'
 import {
@@ -15,13 +15,12 @@ import {
 import { useRouter } from 'next/navigation'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/lib/firebase-client'
-import { Spinner } from '@/src/components/ui/spinner'
-import { useAbility } from '@/src/modules/access-control/AbilityContext' // Importa o hook do CASL
+import { useApp } from '@/app/AppProvider' // Importa o novo hook consolidado
 
 export function UserNav() {
-  const { user, authLoading, isReady } = useAuth()
+  // Usa o novo contexto consolidado
+  const { user, ability } = useApp()
   const router = useRouter()
-  const ability = useAbility() // Obtém as habilidades do contexto
 
   const handleLogout = async () => {
     try {
@@ -35,11 +34,13 @@ export function UserNav() {
     }
   }
 
-  if (authLoading || !isReady || !ability) { // Espera a habilidade ser carregada
-    return <Spinner size="small" />
-  }
+  // A lógica de carregamento foi movida para o AppProvider.
+  // Se chegamos aqui, a autenticação já foi resolvida.
 
-  if (!user) {
+  if (!user || !ability) {
+    // Se não há usuário, mostra os botões de login/cadastro.
+    // Esta verificação é uma segurança, pois o AppProvider já deve ter redirecionado
+    // se necessário, mas é bom ter uma UI fallback.
     return (
       <div className="flex items-center space-x-2">
         <Button onClick={() => router.push('/login')}>Login</Button>
@@ -73,7 +74,6 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          {/* A verificação agora é feita usando as regras centralizadas do CASL */}
           {ability.can('access', 'AdminPanel') && (
             <DropdownMenuItem onClick={() => router.push('/admin')}>
               Painel do Admin
@@ -89,3 +89,4 @@ export function UserNav() {
     </DropdownMenu>
   )
 }
+'''

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
-import { useAbility } from "@/src/modules/access-control/AbilityContext";
+import { useApp } from "@/app/AppProvider"; // Importa o hook consolidado
 import { ReactNode } from "react";
 
 // Componente reutilizável para um card de módulo
@@ -17,11 +17,11 @@ type ModuleCardProps = {
 };
 
 function ModuleCard({ moduleName, description, href, subject, children }: ModuleCardProps) {
-  const ability = useAbility();
+  const { ability } = useApp(); // Usa o novo hook
 
-  // Se o usuário não tiver permissão para 'access' (acessar) o 'subject' (assunto/módulo),
-  // o componente retorna null e não renderiza nada.
-  if (ability.cannot('access', subject as any)) {
+  // Se a habilidade ainda não foi carregada ou se o usuário não tem permissão,
+  // o componente não renderiza nada.
+  if (!ability || ability.cannot('access', subject as any)) {
     return null;
   }
 

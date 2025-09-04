@@ -1,4 +1,4 @@
-'''"use client";
+"use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { onIdTokenChanged, User } from 'firebase/auth';
@@ -63,4 +63,3 @@ export const useApp = () => {
   }
   return context;
 };
-'''

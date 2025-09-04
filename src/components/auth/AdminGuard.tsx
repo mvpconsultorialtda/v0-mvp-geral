@@ -1,44 +1,39 @@
 'use client'
 
-import { useAbility } from '@/src/modules/access-control/AbilityContext';
+import { useApp } from '@/app/AppProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useAuth } from './AuthProvider';
+import { Spinner } from '@/src/components/ui/spinner';
 
 /**
- * Um componente que protege uma rota usando as habilidades do CASL.
- * Ele permite o acesso apenas a usuários com permissão para 'access' o 'AdminPanel'.
+ * Protege uma rota, permitindo o acesso apenas a usuários com a permissão 'access' para o 'AdminPanel'.
+ * Utiliza o hook consolidado `useApp` para verificar o estado de autenticação e as permissões do usuário.
  */
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
-  const { isReady, authLoading } = useAuth(); // Ainda precisamos saber quando a autenticação está pronta
-  const ability = useAbility();
+  const { ability, authLoading } = useApp();
   const router = useRouter();
 
-  // A verificação de permissão agora é feita com o CASL
-  const canAccessAdminPanel = ability.can('access', 'AdminPanel');
-
   useEffect(() => {
-    // Espere até que a verificação de autenticação inicial seja concluída e a habilidade esteja disponível.
-    if (!isReady) {
-      return;
+    // Só executa a lógica de redirecionamento quando a autenticação não está mais carregando.
+    if (!authLoading) {
+      // Se a habilidade não existe ou o usuário não pode acessar o painel de administração, redireciona.
+      if (!ability || ability.cannot('access', 'AdminPanel')) {
+        router.replace('/');
+      }
     }
+  }, [authLoading, ability, router]); // O efeito depende desses valores
 
-    // Se a autenticação estiver concluída e o usuário não tiver a permissão necessária, redirecione.
-    if (isReady && !canAccessAdminPanel) {
-      router.replace('/'); // Use replace para não adicionar uma entrada no histórico do navegador
-    }
-  }, [canAccessAdminPanel, isReady, router]);
-
-  // Enquanto verifica o estado de autenticação ou se a habilidade ainda não foi carregada,
-  // ou se o usuário não puder acessar, mostramos um estado de carregamento enquanto o redirecionamento ocorre.
-  if (authLoading || !isReady || !canAccessAdminPanel) {
+  // Se a autenticação está carregando, ou se o usuário não tem a permissão necessária,
+  // exibe um estado de carregamento. Isso cobre o tempo de carregamento inicial e o breve
+  // momento antes do redirecionamento ser concluído.
+  if (authLoading || !ability || ability.cannot('access', 'AdminPanel')) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p>Verificando permissões...</p>
+      <div className="flex h-screen w-full items-center justify-center">
+        <Spinner size="large" />
       </div>
     );
   }
 
-  // Se o usuário tiver a permissão e a verificação de autenticação estiver concluída, renderize os filhos.
+  // Se a autenticação estiver concluída e o usuário tiver permissão, renderize o conteúdo.
   return <>{children}</>;
 }
