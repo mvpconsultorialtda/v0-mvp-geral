@@ -1,3 +1,4 @@
+
 import { AbilityBuilder, createMongoAbility } from '@casl/ability';
 import { User } from 'firebase/auth';
 
@@ -24,11 +25,12 @@ export type AppAbility = ReturnType<typeof defineAbilitiesFor>;
  * @returns Um objeto de habilidade do CASL.
  */
 export const defineAbilitiesFor = (user: Partial<PermissionUser> | null) => {
-  const { can, build } = new AbilityBuilder(createMongoAbility);
+  const { can, cannot, build } = new AbilityBuilder(createMongoAbility);
 
-  // FOR DEVELOPMENT ONLY: Simula o status de admin para um email específico.
-  // Em produção, o status de admin deve vir de uma fonte segura (ex: custom claims do Firebase).
+  // FOR DEVELOPMENT ONLY: Simulação de roles baseada em e-mails.
+  // Em produção, isso deve vir de uma fonte segura (ex: custom claims do Firebase).
   const isDevAdmin = user?.email === 'test@test.com';
+  const isPowerUser = user?.email === 'user@test.com';
   const effectiveIsAdmin = user?.isAdmin || isDevAdmin;
 
   if (user) {
@@ -39,6 +41,12 @@ export const defineAbilitiesFor = (user: Partial<PermissionUser> | null) => {
     if (effectiveIsAdmin) {
       can('access', 'AdminPanel');
       can('manage', 'all'); // Admins podem gerenciar tudo
+    }
+
+    // Regras para o "power user"
+    if (isPowerUser) {
+      can('manage', 'all'); // Pode gerenciar tudo...
+      cannot('access', 'AdminPanel'); // ...exceto acessar o painel de admin.
     }
   }
 
