@@ -1,4 +1,3 @@
-'use client'
 
 import { LogOut } from 'lucide-react'
 import { useAuth } from '@/src/components/providers/auth-provider'
