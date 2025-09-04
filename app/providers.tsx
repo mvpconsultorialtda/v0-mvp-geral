@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { AuthProvider, useAuth } from "@/src/components/providers/auth-provider";
+import { AuthProvider, useAuth } from "@/src/components/auth/AuthProvider";
 import { Header } from "@/src/components/layout/header";
 import { AbilityProvider } from "@/src/modules/access-control/AbilityProvider";
 import { ReactNode } from "react";
@@ -17,10 +17,10 @@ function AppContent({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AbilityProvider>
+    (<AbilityProvider>
       <Header />
       {children}
-    </AbilityProvider>
+    </AbilityProvider>)
   );
 }
 
