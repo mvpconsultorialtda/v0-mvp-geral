@@ -1,82 +1,40 @@
 
-import fs from "fs";
-import path from "path";
+import { getFirestore } from "@/lib/firebase-admin";
 import { TodoList } from "./types";
 
-// Em ambientes de produção (serverless), só podemos escrever no diretório /tmp
-const dbPath = path.resolve("/tmp", "db.json");
+// Não inicialize a base de dados aqui no topo.
+// Em vez disso, obtenha a instância dentro de cada função.
 
-interface AppDatabase {
-  todoLists: Record<string, TodoList>;
+export async function getTodoLists(): Promise<Record<string, TodoList>> {
+    const db = getFirestore();
+    const snapshot = await db.collection('todoLists').get();
+    const todoLists: Record<string, TodoList> = {};
+    snapshot.forEach(doc => {
+        todoLists[doc.id] = doc.data() as TodoList;
+    });
+    return todoLists;
 }
 
-// Garante que o estado inicial da base de dados (se existir em /data) é copiado para /tmp na primeira execução.
-function initializeDatabase() {
-    if (fs.existsSync(dbPath)) {
-        return; // A base de dados já está em /tmp
+export async function getTodoListById(listId: string): Promise<TodoList | null> {
+    const db = getFirestore();
+    const doc = await db.collection('todoLists').doc(listId).get();
+    if (!doc.exists) {
+        return null;
     }
-
-    const initialDbPath = path.resolve(process.cwd(), "data/db.json");
-
-    try {
-        if (fs.existsSync(initialDbPath)) {
-            const initialData = fs.readFileSync(initialDbPath, "utf-8");
-            fs.writeFileSync(dbPath, initialData, "utf-8");
-        }
-    } catch (error) {
-        console.error("Could not initialize database from data/db.json:", error);
-        // Se a cópia falhar, continuamos com uma base de dados vazia em /tmp
-    }
+    return doc.data() as TodoList;
 }
 
-initializeDatabase();
-
-function readDatabase(): AppDatabase {
-  try {
-    // Lê sempre de /tmp
-    const jsonData = fs.readFileSync(dbPath, "utf-8");
-    return JSON.parse(jsonData) as AppDatabase;
-  } catch (error) {
-    // Se a leitura falhar (ex: ficheiro não existe), retorna uma base de dados vazia.
-    return { todoLists: {} };
-  }
+export async function createTodoList(listId: string, todoList: TodoList): Promise<void> {
+    const db = getFirestore();
+    await db.collection('todoLists').doc(listId).set(todoList);
 }
 
-function writeDatabase(data: AppDatabase) {
-  try {
-    // Escreve sempre em /tmp
-    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), "utf-8");
-  } catch (error) {
-    console.error("Failed to write to database:", error);
-    // Lança o erro para que a API possa capturá-lo e responder adequadamente.
-    throw error;
-  }
+export async function updateTodoList(listId: string, todoList: Partial<TodoList>): Promise<void> {
+    const db = getFirestore();
+    await db.collection('todoLists').doc(listId).update(todoList);
 }
 
-export function getTodoLists() {
-  const db = readDatabase();
-  return db.todoLists;
-}
-
-export function getTodoListById(listId: string): TodoList | null {
-  const db = readDatabase();
-  return db.todoLists[listId] || null;
-}
-
-export function createTodoList(listId: string, todoList: TodoList) {
-  const db = readDatabase();
-  db.todoLists[listId] = todoList;
-  writeDatabase(db);
-}
-
-export function updateTodoList(listId: string, todoList: TodoList) {
-  const db = readDatabase();
-  db.todoLists[listId] = todoList;
-  writeDatabase(db);
-}
-
-export function deleteTodoList(listId: string) {
-  const db = readDatabase();
-  delete db.todoLists[listId];
-  writeDatabase(db);
+export async function deleteTodoList(listId: string): Promise<void> {
+    const db = getFirestore();
+    await db.collection('todoLists').doc(listId).delete();
 }

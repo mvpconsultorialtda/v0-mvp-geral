@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const ability = defineAbilitiesFor(user);
 
   try {
-    const allLists = getTodoLists();
+    const allLists = await getTodoLists(); // Adicionado await
     const accessibleLists: Record<string, TodoList> = {};
 
     // Filtra as listas no servidor com base nas permissões do CASL.
@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(accessibleLists);
   } catch (error) {
+    console.error("Error reading data from Firestore:", error);
     return NextResponse.json({ message: "Error reading data" }, { status: 500 });
   }
 }
@@ -66,10 +67,11 @@ export async function POST(req: NextRequest) {
       todos: [],
     };
 
-    createTodoList(newListId, newList);
+    await createTodoList(newListId, newList); // Adicionado await
 
     return NextResponse.json({ message: "List created successfully", listId: newListId }, { status: 201 });
   } catch (error) {
+    console.error("Error creating list in Firestore:", error);
     return NextResponse.json({ message: "Error creating list" }, { status: 500 });
   }
 }

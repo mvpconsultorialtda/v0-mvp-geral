@@ -1,7 +1,7 @@
 
 import admin from 'firebase-admin';
 
-// This function will initialize the admin SDK if it hasn't been already
+// Esta função irá inicializar o SDK de administração se ainda não tiver sido inicializado
 function ensureFirebaseInitialized() {
   if (!admin.apps.length) {
     try {
@@ -16,8 +16,14 @@ function ensureFirebaseInitialized() {
   }
 }
 
-// A getter function for the auth service
+// Uma função getter para o serviço de autenticação
 export function getAdminAuth() {
   ensureFirebaseInitialized();
   return admin.auth();
+}
+
+// Uma função getter para o Firestore
+export function getFirestore() {
+  ensureFirebaseInitialized();
+  return admin.firestore();
 }
