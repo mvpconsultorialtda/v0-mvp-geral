@@ -1,9 +1,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import { getTodoListById, updateTodoList, deleteTodoList } from "@/src/modules/todo-list/core.server";
-import { verifySession } from "@/src/lib/session";
-import { defineAbilitiesFor } from "@/src/modules/access-control/ability";
-import { TodoItem, TodoList } from "@/src/modules/todo-list/types";
+import { getTodoListById, updateTodoList, deleteTodoList } from "@/modules/todo-list/core.server";
+import { verifySession } from "@/lib/session";
+import { defineAbilitiesFor } from "@/modules/access-control/ability";
+import { TodoItem, TodoList } from "@/modules/todo-list/types";
 
 // Parâmetros esperados na URL para esta rota dinâmica.
 interface RouteParams {

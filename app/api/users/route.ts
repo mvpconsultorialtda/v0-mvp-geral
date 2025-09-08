@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminAuth } from "@/lib/firebase-admin"; // The specific project dependency
-import { verifyAdminRequest } from "@/src/modules/authentication/core"; // The business logic
+import { verifyAdminRequest } from "@/modules/authentication/core"; // The business logic
+import { getAdminAuth } from "@/lib/firebase-admin.server"; // The specific project dependency
 
 /**
  * API route to list all users. Access is restricted to administrators.

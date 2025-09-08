@@ -1,9 +1,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import { getTodoLists, createTodoList } from "@/src/modules/todo-list/core.server";
-import { verifySession } from "@/src/lib/session";
-import { defineAbilitiesFor } from "@/src/modules/access-control/ability";
-import { TodoList } from "@/src/modules/todo-list/types";
+import { getTodoLists, createTodoList } from "@/modules/todo-list/core.server";
+import { verifySession } from "@/lib/session";
+import { defineAbilitiesFor } from "@/modules/access-control/ability";
+import { TodoList } from "@/modules/todo-list/types";
 
 // GET: Retorna as listas de tarefas que o usuário tem permissão para ver.
 export async function GET(req: NextRequest) {

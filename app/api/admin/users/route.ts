@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminAuth } from "@/lib/firebase-admin";
 import { getAuth } from "firebase-admin/auth";
-import { defineAbilitiesFor } from "@/src/modules/access-control/ability";
+import { defineAbilitiesFor } from "@/modules/access-control/ability";
+import { getAdminAuth } from "@/lib/firebase-admin.server";
 
 // Função auxiliar para verificar as permissões do solicitante
 async function checkPermissions(req: NextRequest) {

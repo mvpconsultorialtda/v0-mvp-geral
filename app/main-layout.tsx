@@ -3,8 +3,8 @@
 import { useAuth } from "@/components/auth-provider";
 import { Header } from "@/components/layout/header";
 import { Toaster } from "@/components/ui/toaster";
-import { defineAbilitiesFor } from "@/src/modules/access-control/ability";
-import { AbilityContext } from "@/src/modules/access-control/AbilityContext";
+import { defineAbilitiesFor } from "@/modules/access-control/ability";
+import { AbilityContext } from "@/modules/access-control/AbilityContext";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();

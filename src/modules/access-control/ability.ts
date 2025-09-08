@@ -1,7 +1,7 @@
 
 import { AbilityBuilder, createMongoAbility, MongoAbility, InferSubjects } from '@casl/ability';
 import { User } from 'firebase/auth';
-import { TodoList } from '@/src/modules/todo-list/types'; // Importa o tipo TodoList
+import { TodoList } from '@/modules/todo-list/types'; // Importa o tipo TodoList
 
 // Define uma estrutura de usuário simplificada para verificação de permissões.
 type PermissionUser = {

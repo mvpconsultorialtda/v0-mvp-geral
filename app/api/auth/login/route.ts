@@ -1,7 +1,7 @@
 
 import { NextRequest } from "next/server";
-import { getAdminAuth } from "@/lib/firebase-admin"; // The specific project dependency
-import { createSession } from "@/src/modules/authentication/core"; // The business logic
+import { createSession } from "@/modules/authentication/core"; // The business logic
+import { getAdminAuth } from "@/lib/firebase-admin.server"; // The specific project dependency
 
 /**
  * API route handler for creating a user session (login).
