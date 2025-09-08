@@ -1,28 +1,41 @@
 
 import admin from 'firebase-admin';
 
-// Esta função irá inicializar o SDK de administração se ainda não tiver sido inicializado
+// This function will initialize the admin SDK if it hasn't been initialized already
 function ensureFirebaseInitialized() {
   if (!admin.apps.length) {
     try {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY!);
+      // Instead of parsing a JSON string, we build the service account object
+      // from the individual environment variables.
+      const serviceAccount = {
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      };
+
+      // Check if the required environment variables are present.
+      if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
+        throw new Error("Firebase Admin SDK environment variables are not set.");
+      }
+      
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Firebase admin initialization error", error);
-      throw new Error("Could not initialize Firebase Admin SDK");
+      // Pass the original error message for better debugging.
+      throw new Error(`Could not initialize Firebase Admin SDK: ${error.message}`);
     }
   }
 }
 
-// Uma função getter para o serviço de autenticação
+// A getter function for the auth service
 export function getAdminAuth() {
   ensureFirebaseInitialized();
   return admin.auth();
 }
 
-// Uma função getter para o Firestore
+// A getter function for Firestore
 export function getFirestore() {
   ensureFirebaseInitialized();
   return admin.firestore();
