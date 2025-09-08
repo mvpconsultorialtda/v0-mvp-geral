@@ -27,6 +27,7 @@ async function createList(name: string): Promise<any> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
+    credentials: 'include', // <-- ADICIONADO: Inclui cookies na requisição
   });
   if (!res.ok) {
     const errorData = await res.json();
