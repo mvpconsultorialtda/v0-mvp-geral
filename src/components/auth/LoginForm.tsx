@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signInWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '@/src/lib/firebase-client'
-import { Button } from '@/src/components/ui/button'
-import { Input } from '@/src/components/ui/input'
-import { Label } from '@/src/components/ui/label'
-import { Card, CardContent, CardFooter, CardHeader } from '@/src/components/ui/card'
+import { auth } from '@/lib/firebase-client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import Link from 'next/link'
 
 export default function LoginForm() {

@@ -1,5 +1,5 @@
-import SignUpForm from "@/src/components/auth/SignUpForm";
-import { GoBackButton } from "@/src/components/ui/go-back-button";
+import SignUpForm from "@/components/auth/SignUpForm";
+import { GoBackButton } from "@/components/ui/go-back-button";
 
 export default function SignUpPage() {
   return (

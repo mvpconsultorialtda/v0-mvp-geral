@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Button } from '@/src/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
 export function GoBackButton({ label = 'Voltar' }: { label?: string }) {

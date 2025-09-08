@@ -3,9 +3,9 @@
 import type React from "react"
 
 import { useEffect, useRef, useState } from "react"
-import { Button } from "@/src/components/ui/button"
-import { Card } from "@/src/components/ui/card"
-import { Slider } from "@/src/components/ui/slider"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Slider } from "@/components/ui/slider"
 import { CanvasEditor } from "../canvas-editor"
 import { Download, RotateCcw, Paintbrush, Eraser, Sparkles } from 'lucide-react'
 import type { BrushSettings, ProcessedImage } from "../types"
@@ -162,4 +162,3 @@ export function ImageEditor({ processedImage, onDownload, onClose }: ImageEditor
     </div>
   )
 }
-

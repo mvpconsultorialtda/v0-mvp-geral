@@ -3,8 +3,8 @@
 import type React from "react"
 
 import { useCallback } from "react"
-import { Button } from "@/src/components/ui/button"
-import { Card } from "@/src/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { Upload } from "lucide-react"
 
 interface ImageUploaderProps {

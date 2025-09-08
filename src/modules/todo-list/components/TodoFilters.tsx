@@ -1,8 +1,8 @@
 "use client"
-import { Input } from "@/src/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/src/components/ui/select"
-import { Button } from "@/src/components/ui/button"
-import { Badge } from "@/src/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Search, Filter, X } from "lucide-react"
 import type { TodoFilter, TodoStatus } from "../types"
 

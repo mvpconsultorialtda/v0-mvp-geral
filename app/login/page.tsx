@@ -1,5 +1,5 @@
-import LoginForm from "@/src/components/auth/LoginForm";
-import { GoBackButton } from "@/src/components/ui/go-back-button";
+import LoginForm from "@/components/auth/LoginForm";
+import { GoBackButton } from "@/components/ui/go-back-button";
 
 export default function LoginPage() {
   return (
