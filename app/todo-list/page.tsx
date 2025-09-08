@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Users, ArrowRight } from 'lucide-react';
-import { Button } from '@/src/components/ui/button';
-import { Input } from '@/src/components/ui/input';
-import { useToast } from '@/src/components/ui/use-toast';
-import { GoBackButton } from '@/src/components/ui/go-back-button';
-import type { TodoList } from '@/src/modules/todo-list/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
+import { GoBackButton } from '@/components/ui/go-back-button';
+import type { TodoList } from '@/modules/todo-list/types';
 
 // Tipagem para o objeto de listas que vem da API
 type TodoListsResponse = Record<string, TodoList>;
