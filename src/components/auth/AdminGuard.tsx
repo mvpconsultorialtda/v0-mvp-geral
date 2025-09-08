@@ -1,9 +1,9 @@
 'use client'
 
-import { useApp } from '@/app/AppProvider';
+import { useApp } from '@/providers/AppProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { Spinner } from '@/src/components/ui/spinner';
+import { Spinner } from '@/components/ui/spinner';
 
 /**
  * Protege uma rota, permitindo o acesso apenas a usuários com a permissão 'access' para o 'AdminPanel'.

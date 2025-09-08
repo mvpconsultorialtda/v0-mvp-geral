@@ -1,9 +1,9 @@
 'use client';
 
 import Link from "next/link";
-import { Button } from "@/src/components/ui/button";
-import { Card } from "@/src/components/ui/card";
-import { useApp } from "@/app/AppProvider"; // Importa o hook consolidado
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { useApp } from "@/providers/AppProvider"; // Importa o hook consolidado
 import { ReactNode } from "react";
 
 // Componente reutilizável para um card de módulo

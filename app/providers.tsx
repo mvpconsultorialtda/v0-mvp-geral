@@ -1,7 +1,7 @@
 "use client";
 
-import { AppProvider } from './AppProvider';
-import { ThemeProvider } from '@/src/components/providers/theme-provider';
+import { AppProvider } from '@/providers/AppProvider';
+import { ThemeProvider } from '@/components/providers/theme-provider';
 
 /**
  * Componente central que envolve a aplicação com todos os provedores de contexto necessários.

@@ -3,8 +3,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { onIdTokenChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase-client';
-import { defineAbilitiesFor, AppAbility } from '@/src/modules/access-control/ability';
-import { Spinner } from '@/src/components/ui/spinner';
+import { defineAbilitiesFor, AppAbility } from '@/modules/access-control/ability';
+import { Spinner } from '@/components/ui/spinner';
 
 interface AppContextType {
   user: User | null;

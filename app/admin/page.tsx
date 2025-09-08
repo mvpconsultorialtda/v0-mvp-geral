@@ -1,7 +1,7 @@
 import React from 'react';
-import AdminGuard from '@/src/components/auth/AdminGuard';
-import UserManagement from '@/src/components/admin/UserManagement';
-import { GoBackButton } from '@/src/components/ui/go-back-button';
+import AdminGuard from '@/components/auth/AdminGuard';
+import UserManagement from '@/components/admin/UserManagement';
+import { GoBackButton } from '@/components/ui/go-back-button';
 
 export default function AdminPage() {
   return (
