@@ -1,34 +1,40 @@
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('firebaseIdToken');
+  const sessionCookie = request.cookies.get('session'); // <-- CORREÇÃO: Verifica o cookie 'session'
   const { pathname } = request.nextUrl;
 
-  // Se não houver token e o usuário não estiver tentando acessar a página de login ou signup,
-  // redirecione para a página de login.
-  if (!token && pathname !== '/login' && pathname !== '/signup' && !pathname.startsWith('/api')) {
+  // Lista de rotas públicas que não exigem autenticação
+  const publicPaths = ['/login', '/signup'];
+
+  // Verifica se a rota atual é pública
+  const isPublicPath = publicPaths.some(path => pathname.startsWith(path));
+
+  // Se não houver cookie de sessão e a rota não for pública (e não for uma API),
+  // redireciona para a página de login.
+  if (!sessionCookie && !isPublicPath && !pathname.startsWith('/api')) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Se houver um token e o usuário tentar acessar a página de login ou signup,
-  // redirecione para a página de perfil.
-  if (token && (pathname === '/login' || pathname === '/signup')) {
-    return NextResponse.redirect(new URL('/profile', request.url));
+  // Se houver um cookie de sessão e o usuário tentar acessar as rotas de login/signup,
+  // redireciona para a página principal da aplicação (todo-list).
+  if (sessionCookie && isPublicPath) {
+    return NextResponse.redirect(new URL('/todo-list', request.url)); // <-- CORREÇÃO: Redireciona para a página correta
   }
 
+  // Permite que a requisição continue se nenhuma das condições acima for atendida
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - / (the root path, which should be public)
+     * Aplica o middleware a todas as rotas, exceto:
+     * - Arquivos estáticos (_next/static)
+     * - Arquivos de otimização de imagem (_next/image)
+     * - Favicon (favicon.ico)
+     * - A rota raiz (/), que deve ser pública ou ter seu próprio tratamento.
      */
     '/((?!_next/static|_next/image|favicon.ico|^/$).*)',
   ],
