@@ -1,5 +1,5 @@
 
-import { getAdminAuth } from './firebase-admin';
+import { getAdminAuth } from './firebase-admin.server';
 import { NextRequest } from 'next/server';
 
 // Define a estrutura esperada do usuário extraído do token

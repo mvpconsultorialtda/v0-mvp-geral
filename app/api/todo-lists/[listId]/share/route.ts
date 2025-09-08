@@ -1,9 +1,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import { getTodoListById, updateTodoList } from "@/src/modules/todo-list/core";
-import { verifySession } from "@/src/lib/session";
-import { defineAbilitiesFor } from "@/src/modules/access-control/ability";
-import { getAdminAuth } from "@/lib/firebase-admin";
+import { getTodoListById, updateTodoList } from "@/modules/todo-list/core.server";
+import { verifySession } from "@/lib/session";
+import { defineAbilitiesFor } from "@/modules/access-control/ability";
+import { getAdminAuth } from "@/lib/firebase-admin.server";
 
 // Parâmetros esperados na URL para esta rota dinâmica.
 interface RouteParams {

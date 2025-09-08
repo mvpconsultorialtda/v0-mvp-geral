@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import { getTodoLists, createTodoList } from "@/src/modules/todo-list/core";
+import { getTodoLists, createTodoList } from "@/src/modules/todo-list/core.server";
 import { verifySession } from "@/src/lib/session";
 import { defineAbilitiesFor } from "@/src/modules/access-control/ability";
 import { TodoList } from "@/src/modules/todo-list/types";

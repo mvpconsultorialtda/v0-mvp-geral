@@ -1,5 +1,5 @@
 
-import { getFirestore } from "@/lib/firebase-admin";
+import { getFirestore } from "@/lib/firebase-admin.server";
 import { TodoList } from "./types";
 
 // Não inicialize a base de dados aqui no topo.
