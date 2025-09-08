@@ -1,41 +1,45 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// 1. Defina as rotas que devem ser públicas
+const publicRoutes = ['/login', '/signup', '/']; // A raiz agora é explicitamente pública
+
 export function middleware(request: NextRequest) {
-  const sessionCookie = request.cookies.get('session'); // <-- CORREÇÃO: Verifica o cookie 'session'
   const { pathname } = request.nextUrl;
+  const sessionCookie = request.cookies.get('session');
 
-  // Lista de rotas públicas que não exigem autenticação
-  const publicPaths = ['/login', '/signup'];
+  // 2. Verifique se o usuário está autenticado
+  const isUserAuthenticated = !!sessionCookie;
 
-  // Verifica se a rota atual é pública
-  const isPublicPath = publicPaths.some(path => pathname.startsWith(path));
+  // 3. Verifique se a rota é pública
+  const isPublicRoute = publicRoutes.includes(pathname);
 
-  // Se não houver cookie de sessão e a rota não for pública (e não for uma API),
-  // redireciona para a página de login.
-  if (!sessionCookie && !isPublicPath && !pathname.startsWith('/api')) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // Se o usuário está autenticado...
+  if (isUserAuthenticated) {
+    // E tenta acessar uma rota pública (login/signup), redirecione para /todo-list
+    if (isPublicRoute) {
+      return NextResponse.redirect(new URL('/todo-list', request.url));
+    }
+  } 
+  // Se o usuário NÃO está autenticado...
+  else {
+    // E tenta acessar uma rota protegida, redirecione para /login
+    if (!isPublicRoute) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
   }
 
-  // Se houver um cookie de sessão e o usuário tentar acessar as rotas de login/signup,
-  // redireciona para a página principal da aplicação (todo-list).
-  if (sessionCookie && isPublicPath) {
-    return NextResponse.redirect(new URL('/todo-list', request.url)); // <-- CORREÇÃO: Redireciona para a página correta
-  }
-
-  // Permite que a requisição continue se nenhuma das condições acima for atendida
+  // Se nenhuma das condições acima se aplicar, continue a requisição
   return NextResponse.next();
 }
 
 export const config = {
+  /*
+   * O matcher agora intercepta TODAS as rotas, exceto as que são para
+   * recursos estáticos da Next.js (arquivos, imagens, etc.).
+   * A lógica DENTRO do middleware agora decide quais rotas são públicas.
+   */
   matcher: [
-    /*
-     * Aplica o middleware a todas as rotas, exceto:
-     * - Arquivos estáticos (_next/static)
-     * - Arquivos de otimização de imagem (_next/image)
-     * - Favicon (favicon.ico)
-     * - A rota raiz (/), que deve ser pública ou ter seu próprio tratamento.
-     */
-    '/((?!_next/static|_next/image|favicon.ico|^/$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };
