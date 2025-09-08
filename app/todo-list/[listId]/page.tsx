@@ -4,14 +4,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Plus, LayoutGrid, List, Sun, Moon, Share2 } from 'lucide-react';
 
-import { Button } from '@/src/components/ui/button';
-import { Separator } from '@/src/components/ui/separator';
-import { useToast } from '@/src/components/ui/use-toast';
-import { TodoItem } from '@/src/modules/todo-list/components/TodoItem';
-import { TodoForm } from '@/src/modules/todo-list/components/TodoForm';
-import { TodoFilters } from '@/src/modules/todo-list/components/TodoFilters';
-import type { Todo, TodoFilter, TodoList } from '@/src/modules/todo-list/types';
-import { GoBackButton } from '@/src/components/ui/go-back-button';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/components/ui/use-toast';
+import { TodoItem } from '@/modules/todo-list/components/TodoItem';
+import { TodoForm } from '@/modules/todo-list/components/TodoForm';
+import { TodoFilters } from '@/modules/todo-list/components/TodoFilters';
+import type { Todo, TodoFilter, TodoList } from '@/modules/todo-list/types';
+import { GoBackButton } from '@/components/ui/go-back-button';
 
 // A página agora é dinâmica para forçar a renderização no lado do cliente
 export const dynamic = 'force-dynamic';
