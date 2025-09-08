@@ -5,10 +5,6 @@ import { verifySession } from "@/src/lib/session";
 import { defineAbilitiesFor } from "@/src/modules/access-control/ability";
 import { TodoList } from "@/src/modules/todo-list/types";
 
-/**
- * API para listar todas as TodoLists ou criar uma nova.
- */
-
 // GET: Retorna as listas de tarefas que o usuário tem permissão para ver.
 export async function GET(req: NextRequest) {
   const user = await verifySession(req);
@@ -19,24 +15,25 @@ export async function GET(req: NextRequest) {
   const ability = defineAbilitiesFor(user);
 
   try {
-    const allLists = await getTodoLists(); // Adicionado await
+    const allLists = await getTodoLists();
     const accessibleLists: Record<string, TodoList> = {};
 
     // Filtra as listas no servidor com base nas permissões do CASL.
     for (const listId in allLists) {
       if (Object.prototype.hasOwnProperty.call(allLists, listId)) {
         const list = allLists[listId];
-        // O CASL verifica se o usuário pode ler esta lista específica.
-        if (ability.can('read', list)) {
+        // CORREÇÃO: Passar o tipo 'TodoList' como string e o objeto para verificação de condições.
+        if (ability.can('read', 'TodoList', list)) {
           accessibleLists[listId] = list;
         }
       }
     }
 
     return NextResponse.json(accessibleLists);
-  } catch (error) {
-    console.error("Error reading data from Firestore:", error);
-    return NextResponse.json({ message: "Error reading data" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Error reading data or checking permissions:", error);
+    // Adicionar mais detalhes do erro na resposta em desenvolvimento
+    return NextResponse.json({ message: "Error reading data", error: error.message }, { status: 500 });
   }
 }
 
@@ -48,7 +45,8 @@ export async function POST(req: NextRequest) {
   }
 
   const ability = defineAbilitiesFor(user);
-  // Verifica se o usuário tem permissão para criar uma nova lista.
+  
+  // A verificação de criação já estava correta, pois não depende de uma instância de objeto.
   if (ability.cannot('create', 'TodoList')) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
@@ -62,16 +60,16 @@ export async function POST(req: NextRequest) {
     const newListId = `list_${Date.now()}`;
     const newList: TodoList = {
       name,
-      ownerId: user.uid, // O criador da lista é o dono.
+      ownerId: user.uid,
       accessControl: {},
       todos: [],
     };
 
-    await createTodoList(newListId, newList); // Adicionado await
+    await createTodoList(newListId, newList);
 
     return NextResponse.json({ message: "List created successfully", listId: newListId }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating list in Firestore:", error);
-    return NextResponse.json({ message: "Error creating list" }, { status: 500 });
+    return NextResponse.json({ message: "Error creating list", error: error.message }, { status: 500 });
   }
 }
