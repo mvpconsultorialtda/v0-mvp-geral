@@ -1,17 +1,23 @@
 
-import { NextRequest } from "next/server";
-import { createSession } from "@/modules/authentication/core"; // The business logic
-import { getAdminAuth } from "@/lib/firebase-admin.server"; // The specific project dependency
+import { NextRequest, NextResponse } from "next/server";
+import { createSessionCookie } from "@/modules/authentication/helpers";
+import { getAdminAuth } from "@/lib/firebase-admin.server";
 
-/**
- * API route handler for creating a user session (login).
- * This route acts as the integration layer, using the core authentication logic
- * with the project-specific Firebase Admin instance.
- */
 export async function POST(req: NextRequest) {
   const { idToken } = await req.json();
 
-  // Get the auth instance and delegate session creation to the core module.
-  const adminAuth = getAdminAuth();
-  return await createSession(adminAuth, idToken);
+  try {
+    const adminAuth = getAdminAuth();
+    await createSessionCookie(adminAuth, idToken);
+    return NextResponse.json({ status: "success" }, { status: 200 });
+  } catch (error: any) {
+    console.error("[API Login Error]", error);
+    if (error.message.includes("Firebase Admin SDK")) {
+      return NextResponse.json(
+        { message: "Erro de configuração do servidor." },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json({ message: "Erro interno do servidor." }, { status: 500 });
+  }
 }

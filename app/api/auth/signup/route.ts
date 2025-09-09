@@ -1,22 +1,40 @@
 
-import { NextRequest } from "next/server";
-import { createUser } from "@/modules/authentication/core"; // The business logic
-import { getAdminAuth } from "@/lib/firebase-admin.server"; // The specific project dependency
+import { NextRequest, NextResponse } from "next/server";
+import { createUserWithRole } from "@/modules/authentication/helpers"; 
+import { getAdminAuth } from "@/lib/firebase-admin.server";
 
-/**
- * API route handler for creating a new user (signup).
- * This route acts as the integration layer, using the core authentication logic
- * with the project-specific Firebase Admin instance.
- */
 export async function POST(req: NextRequest) {
   const { email, password } = await req.json();
 
-  // Define o role padrão para novos usuários. Isso garante que os usuários 
-  // não possam atribuir a si mesmos roles elevados no momento do cadastro.
+  // O role padrão para novos usuários é definido aqui, no lado do servidor, por segurança.
   const defaultRole = 'user_default';
 
-  // Obtém a instância de autenticação e delega a criação do usuário para o módulo principal,
-  // forçando a atribuição do role padrão.
-  const adminAuth = getAdminAuth();
-  return await createUser(adminAuth, email, password, defaultRole);
+  try {
+    // A inicialização do Firebase Admin é tentada aqui. 
+    // Se falhar, um erro será lançado e capturado pelo bloco catch.
+    const adminAuth = getAdminAuth();
+
+    // Delega a criação do usuário para a função helper, que agora é mais robusta.
+    const newUser = await createUserWithRole(adminAuth, email, password, defaultRole);
+
+    return NextResponse.json({ message: "Usuário criado com sucesso", user: newUser }, { status: 201 });
+
+  } catch (error: any) {
+    // Log do erro para depuração no servidor (ex: Vercel logs)
+    console.error("[API Signup Error]", error);
+
+    // Tratamento de erro específico para falha na inicialização do Firebase
+    if (error.message.includes("Could not initialize Firebase Admin SDK")) {
+      return NextResponse.json(
+        { message: "Erro de configuração do servidor. As credenciais do Firebase não estão configuradas." },
+        { status: 500 }
+      );
+    }
+
+    // Tratamento de erros de validação ou do Firebase, usando o statusCode anexado
+    const status = error.statusCode || 500;
+    const message = error.message || "Erro interno do servidor.";
+
+    return NextResponse.json({ message }, { status });
+  }
 }
