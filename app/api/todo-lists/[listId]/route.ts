@@ -12,7 +12,34 @@ interface RouteParams {
 
 // GET: Retorna os detalhes de uma lista de tarefas específica.
 export async function GET(req: NextRequest, { params }: RouteParams) {
-    // ... (código existente inalterado)
+  const user = await verifySession(req);
+  if (!user) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const { listId } = params;
+
+  try {
+    const todoList = await getTodoListById(listId);
+
+    if (!todoList) {
+      return NextResponse.json({ message: "List not found" }, { status: 404 });
+    }
+
+    const ability = defineAbilitiesFor(user);
+
+    // Verifica se o usuário tem permissão para ler a lista específica.
+    if (ability.cannot('read', todoList)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    
+    // Se a permissão for concedida, retorna os dados da lista.
+    return NextResponse.json(todoList);
+
+  } catch (error) {
+    console.error(`Error fetching list ${listId}:`, error);
+    return NextResponse.json({ message: "Error fetching list data" }, { status: 500 });
+  }
 }
 
 // POST: Adiciona uma nova tarefa a uma lista de tarefas específica.
