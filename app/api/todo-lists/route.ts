@@ -1,13 +1,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verifySession } from "@/lib/session";
-// CORRIGIDO: O caminho da importação foi ajustado para o local correto.
 import { defineAbilitiesFor } from "@/modules/access-control/ability";
 import { createTodoList, getTodoLists } from "@/modules/todo-list/core.server";
 import { TodoList } from "@/modules/todo-list/types";
 
 /**
- * API para obter as listas de tarefas do usuário.
+ * GET /api/todo-lists
+ * Busca todas as listas de tarefas acessíveis para o usuário.
  */
 export async function GET(req: NextRequest) {
   const user = await verifySession(req);
@@ -18,28 +18,32 @@ export async function GET(req: NextRequest) {
   const ability = defineAbilitiesFor(user);
 
   try {
+    // getTodoLists já usa o readDb seguro.
     const allLists = await getTodoLists();
     const accessibleLists: Record<string, TodoList> = {};
 
-    // Filtra as listas no servidor com base nas permissões do CASL.
+    // Filtra as listas com base nas permissões do usuário.
     for (const listId in allLists) {
       if (Object.prototype.hasOwnProperty.call(allLists, listId)) {
         const list = allLists[listId];
-        // CORRIGIDO: Passa-se a instância do objeto diretamente para a verificação de condições.
         if (ability.can('read', list)) {
-          accessibleLists[listId] = list;
+          accessibleLists[listId] = { ...list, id: listId };
         }
       }
     }
 
+    // Retorna um objeto de listas acessíveis. O frontend iterará sobre Object.values().
     return NextResponse.json(accessibleLists);
   } catch (error: any) {
-    console.error("Error reading data or checking permissions:", error);
-    return NextResponse.json({ message: "Error reading data", error: error.message }, { status: 500 });
+    console.error("Error fetching todo lists:", error);
+    return NextResponse.json({ message: "Error fetching data" }, { status: 500 });
   }
 }
 
-// POST: Cria uma nova lista de tarefas.
+/**
+ * POST /api/todo-lists
+ * Cria uma nova lista de tarefas.
+ */
 export async function POST(req: NextRequest) {
   const user = await verifySession(req);
   if (!user) {
@@ -48,6 +52,7 @@ export async function POST(req: NextRequest) {
 
   const ability = defineAbilitiesFor(user);
   
+  // A verificação de permissão é feita antes de ler o corpo da requisição.
   if (ability.cannot('create', 'TodoList')) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
@@ -59,18 +64,19 @@ export async function POST(req: NextRequest) {
     }
 
     const newListId = `list_${Date.now()}`;
-    const newList: TodoList = {
+    // O objeto da nova lista não precisa mais do campo 'todos'.
+    const newList: Omit<TodoList, 'id' | 'todos'> = {
       name,
       ownerId: user.uid,
       accessControl: {},
-      todos: [],
     };
 
     await createTodoList(newListId, newList);
 
-    return NextResponse.json({ message: "List created successfully", listId: newListId }, { status: 201 });
+    return NextResponse.json({ ...newList, id: newListId }, { status: 201 });
+
   } catch (error: any) {
-    console.error("Error creating list in Firestore:", error);
-    return NextResponse.json({ message: "Error creating list", error: error.message }, { status: 500 });
+    console.error("Error creating list:", error);
+    return NextResponse.json({ message: "Error creating list" }, { status: 500 });
   }
 }

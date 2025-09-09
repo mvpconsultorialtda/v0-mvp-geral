@@ -1,32 +1,16 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
-
-const dbPath = path.resolve(process.cwd(), 'data', 'db.json');
-
-// Helper functions to read and write the database (can be refactored into a shared module)
-async function readDb() {
-  try {
-    const fileContent = await fs.readFile(dbPath, 'utf-8');
-    return JSON.parse(fileContent);
-  } catch (error) {
-    return { todoLists: {}, tasks: {} };
-  }
-}
-
-async function writeDb(data: any) {
-  await fs.writeFile(dbPath, JSON.stringify(data, null, 2));
-}
+import { readDb, writeDb } from "@/lib/db"; // Usando o módulo centralizado
 
 /**
  * GET /api/tasks/[taskId]
- * Fetches a single task by its ID.
+ * Busca uma única tarefa pelo seu ID.
  */
 export async function GET(req: NextRequest, { params }: { params: { taskId: string } }) {
     const { taskId } = params;
     const db = await readDb();
 
+    // readDb garante que db.tasks exista.
     const task = db.tasks[taskId];
 
     if (!task) {
@@ -38,23 +22,23 @@ export async function GET(req: NextRequest, { params }: { params: { taskId: stri
 
 /**
  * PATCH /api/tasks/[taskId]
- * Updates a specific task.
+ * Atualiza uma tarefa específica.
  */
 export async function PATCH(req: NextRequest, { params }: { params: { taskId: string } }) {
   const { taskId } = params;
   const db = await readDb();
 
-  if (!db.tasks[taskId]) {
+  if (!db.tasks || !db.tasks[taskId]) {
     return NextResponse.json({ error: 'Task not found' }, { status: 404 });
   }
 
   const body = await req.json();
 
-  // Merge existing task with the new partial data
+  // Mescla a tarefa existente com os novos dados parciais.
   const updatedTask = {
     ...db.tasks[taskId],
     ...body,
-    updatedAt: new Date().toISOString(), // Always update the timestamp
+    updatedAt: new Date().toISOString(), // Sempre atualiza o timestamp.
   };
 
   db.tasks[taskId] = updatedTask;
@@ -65,19 +49,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { taskId: st
 
 /**
  * DELETE /api/tasks/[taskId]
- * Deletes a specific task.
+ * Deleta uma tarefa específica.
  */
 export async function DELETE(req: NextRequest, { params }: { params: { taskId: string } }) {
   const { taskId } = params;
   const db = await readDb();
 
-  if (!db.tasks[taskId]) {
-    // It's idempotent, so returning 200 or 204 is also fine if it doesn't exist.
-    return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+  if (!db.tasks || !db.tasks[taskId]) {
+    // A operação é idempotente. Se a tarefa não existe, o estado desejado (ausência da tarefa) já foi alcançado.
+    // Retornar 204 é apropriado aqui.
+    return new NextResponse(null, { status: 204 });
   }
 
   delete db.tasks[taskId];
   await writeDb(db);
 
-  return new NextResponse(null, { status: 204 }); // 204 No Content is standard for a successful delete
+  return new NextResponse(null, { status: 204 }); // 204 No Content é o padrão para um delete bem-sucedido.
 }
