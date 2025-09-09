@@ -1,4 +1,3 @@
-
 {
   "todoLists": {
     "list_1": {
@@ -6,27 +5,18 @@
       "ownerId": "user_admin_id",
       "accessControl": {
         "user_power_user_id": "editor"
-      },
-      "todos": [
-        { "id": "task_1", "title": "Definir escopo do projeto", "status": "completed" },
-        { "id": "task_2", "title": "Montar a equipe de desenvolvimento", "status": "in-progress" },
-        { "id": "task_3", "title": "Desenvolver o protótipo inicial", "status": "pending" }
-      ]
+      }
     },
     "list_2": {
       "name": "Tarefas Administrativas",
       "ownerId": "user_admin_id",
-      "accessControl": {},
-      "todos": [
-        { "id": "task_4", "title": "Revisar o orçamento trimestral", "status": "pending" },
-        { "id": "task_5", "title": "Preparar a apresentação para a diretoria", "status": "pending" }
-      ]
+      "accessControl": {}
     },
     "list_3": {
       "name": "Lista de Compras",
       "ownerId": "user_power_user_id",
-      "accessControl": {},
-      "todos": []
+      "accessControl": {}
     }
-  }
+  },
+  "tasks": {}
 }

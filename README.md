@@ -8,6 +8,21 @@ O diretório `app`, utilizando o Next.js App Router, atua como a plataforma de m
 
 O objetivo principal é permitir a rápida prototipagem e desenvolvimento de novas aplicações, combinando módulos existentes, criando novas regras de integração e conectando-os a diferentes fontes de dados conforme necessário.
 
+## Princípios de Design de Dados e API
+
+Para garantir a escalabilidade, eficiência e manutenibilidade do projeto, novas features devem seguir uma abordagem de design focada em recursos granulares.
+
+1.  **Entidades como Recursos Separados**: Cada entidade de negócio (ex: `Listas`, `Tarefas`, `Usuários`) deve ser tratada como uma coleção de dados independente. Evite aninhar coleções grandes (como um array de tarefas) dentro de outro objeto de dados (como uma lista).
+2.  **Relacionamentos por Referência**: Conecte entidades relacionadas usando chaves de referência (ex: um objeto `tarefa` deve ter um campo `listId` em vez de estar dentro de um array `todos` na `lista`).
+3.  **APIs Granulares e Focadas (RESTful)**: As APIs devem operar sobre recursos específicos, não sobre estruturas de dados agregadas.
+    *   Use `POST /recurso` para criar um novo item.
+    *   Use `GET /recurso` ou `GET /recurso/:id` para ler um ou mais itens.
+    *   Use `PATCH /recurso/:id` para realizar atualizações parciais e eficientes em um item específico.
+    *   Use `DELETE /recurso/:id` para remover um item específico.
+    *   Para recursos aninhados, a API deve refletir a relação, como `GET /listas/:listaId/tarefas`.
+
+Seguir esses princípios leva a requisições de rede menores, previne condições de corrida (`race conditions`), melhora o desempenho e torna o sistema mais flexível e fácil de manter a longo prazo.
+
 ## Arquitetura
 
 O projeto é dividido em duas áreas principais:
