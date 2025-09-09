@@ -16,14 +16,28 @@ import { GoBackButton } from '@/components/ui/go-back-button';
 // A página agora é dinâmica para forçar a renderização no lado do cliente
 export const dynamic = 'force-dynamic';
 
+// Função para transformar strings de data em objetos Date
+const transformTodoDates = (todo: any): Todo => {
+    return {
+        ...todo,
+        createdAt: new Date(todo.createdAt),
+        updatedAt: new Date(todo.updatedAt),
+        ...(todo.dueDate && { dueDate: new Date(todo.dueDate) }),
+    };
+};
+
 async function fetchListDetails(listId: string): Promise<TodoList> {
     const res = await fetch(`/api/todo-lists/${listId}`);
     if (!res.ok) {
-        // Em caso de 403 ou 404, o servidor pode retornar uma mensagem
         const errorData = await res.json().catch(() => null);
         throw new Error(errorData?.message || 'Failed to fetch list details');
     }
-    return res.json();
+    const listData = await res.json();
+    // Garante que todas as datas das tarefas sejam objetos Date
+    return {
+        ...listData,
+        todos: listData.todos.map(transformTodoDates),
+    };
 }
 
 async function saveListDetails(listId: string, todos: Todo[]) {
@@ -31,7 +45,7 @@ async function saveListDetails(listId: string, todos: Todo[]) {
     {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ todos }), // A API espera um objeto com a chave 'todos'
+        body: JSON.stringify({ todos }),
     });
     if (!res.ok) {
         const errorData = await res.json().catch(() => null);
@@ -62,7 +76,6 @@ export default function TodoListPage() {
                 description: error.message,
                 variant: 'destructive',
             });
-            // Se falhar (ex: acesso negado), redireciona para a página de listas
             router.push('/todo-list');
         } finally {
             setIsLoading(false);
@@ -88,8 +101,8 @@ export default function TodoListPage() {
         const newTodo = {
             ...todoData,
             id: `todo_${Date.now()}`,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
         const newTodos = [...list.todos, newTodo];
         try {
@@ -104,7 +117,7 @@ export default function TodoListPage() {
 
     const handleUpdateTodo = async (todoData: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>) => {
         if (!editingTodo || !list) return;
-        const updatedTodos = list.todos.map(t => t.id === editingTodo.id ? { ...t, ...todoData, updatedAt: new Date().toISOString() } : t);
+        const updatedTodos = list.todos.map(t => t.id === editingTodo.id ? { ...t, ...todoData, updatedAt: new Date() } : t);
         try {
             await saveListDetails(listId, updatedTodos);
             await refreshTodos(listId);
@@ -133,7 +146,7 @@ export default function TodoListPage() {
 
     const handleStatusChange = async (id: string, status: 'pending' | 'in-progress' | 'completed') => {
         if (!list) return;
-        const updatedTodos = list.todos.map(t => t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t);
+        const updatedTodos = list.todos.map(t => t.id === id ? { ...t, status, updatedAt: new Date() } : t);
         try {
             await saveListDetails(listId, updatedTodos);
             await refreshTodos(listId);
@@ -152,7 +165,6 @@ export default function TodoListPage() {
         setIsFormVisible(false);
     };
 
-  // Funções de filtro e visualização permanecem iguais...
   const handleFilterChange = (newFilter: TodoFilter) => setFilter(newFilter);
   const handleClearFilters = () => setFilter({ status: 'all' });
 
@@ -181,7 +193,6 @@ export default function TodoListPage() {
                             <Plus className='h-4 w-4 mr-2' />
                             Nova Tarefa
                         </Button>
-                         {/* Botão de compartilhar (funcionalidade futura) */}
                         <Button variant='outline' size='sm' onClick={() => toast({title: 'Em breve!'})}>
                             <Share2 className='h-4 w-4 mr-2' />
                             Compartilhar
@@ -192,7 +203,7 @@ export default function TodoListPage() {
                 <div className='mb-8'>
                     <TodoFilters
                         filter={filter}
-                        categories={[] /* Categorias não são mais usadas neste escopo */}
+                        categories={[]}
                         onFilterChange={handleFilterChange}
                         onClearFilters={handleClearFilters}
                     />
