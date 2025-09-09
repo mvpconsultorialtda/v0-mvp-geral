@@ -9,19 +9,18 @@ import { useToast } from '@/components/ui/use-toast';
 import { GoBackButton } from '@/components/ui/go-back-button';
 import type { TodoList } from '@/modules/todo-list/types';
 
-// Tipagem para o objeto de listas que vem da API
 type TodoListsResponse = Record<string, TodoList>;
 
-// Função para buscar as listas da API
+// Função de fetch modificada para lançar a resposta em caso de erro
 async function fetchLists(): Promise<TodoListsResponse> {
   const res = await fetch('/api/todo-lists');
   if (!res.ok) {
-    throw new Error('Failed to fetch lists');
+    throw res; // Lança o objeto de resposta inteiro
   }
   return res.json();
 }
 
-// Função para criar uma nova lista
+// Função de create modificada para lançar um erro com status
 async function createList(name: string): Promise<any> {
   const res = await fetch('/api/todo-lists', {
     method: 'POST',
@@ -30,8 +29,10 @@ async function createList(name: string): Promise<any> {
     credentials: 'include',
   });
   if (!res.ok) {
-    const errorData = await res.json();
-    throw new Error(errorData.message || 'Failed to create list');
+    const errorData = await res.json().catch(() => ({ message: 'Failed to create list' }));
+    const error = new Error(errorData.message);
+    (error as any).status = res.status;
+    throw error; // Lança um erro com a propriedade status
   }
   return res.json();
 }
@@ -43,36 +44,49 @@ export default function TodoListClientPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  // Efeito para carregar as listas iniciais
   useEffect(() => {
     const loadLists = async () => {
       setIsLoading(true);
       try {
         const fetchedLists = await fetchLists();
         setLists(fetchedLists);
-      } catch (error) {
-        toast({
-          title: 'Erro ao carregar as listas',
-          description: 'Não foi possível buscar os dados do servidor.',
-          variant: 'destructive',
-        });
+      } catch (error: any) {
+        // Verifica se o erro tem o status 401 (Não Autorizado)
+        if (error.status === 401) {
+          toast({
+            title: 'Sessão expirada',
+            description: 'Por favor, faça o login novamente.',
+            variant: 'destructive',
+          });
+          router.push('/login'); // Redireciona para a página de login
+        } else {
+          toast({
+            title: 'Erro ao carregar as listas',
+            description: 'Não foi possível buscar os dados do servidor.',
+            variant: 'destructive',
+          });
+        }
       } finally {
         setIsLoading(false);
       }
     };
     loadLists();
-  }, [toast]);
+  }, [toast, router]); // Adiciona router ao array de dependências
 
   const refreshLists = async () => {
-      try {
-        const fetchedLists = await fetchLists();
-        setLists(fetchedLists);
-      } catch (error) {
-        toast({
-            title: 'Erro ao atualizar as listas',
-            variant: 'destructive',
-        });
-      }
+    try {
+      const fetchedLists = await fetchLists();
+      setLists(fetchedLists);
+    } catch (error: any) {
+       if (error.status === 401) {
+          router.push('/login');
+        } else {
+            toast({
+                title: 'Erro ao atualizar as listas',
+                variant: 'destructive',
+            });
+        }
+    }
   };
 
   const handleCreateList = async (e: React.FormEvent) => {
@@ -83,26 +97,41 @@ export default function TodoListClientPage() {
     }
 
     try {
-      const result = await createList(newListName);
+      await createList(newListName);
       toast({
         title: 'Sucesso!',
         description: `A lista "${newListName}" foi criada.`,
       });
       setNewListName('');
-      await refreshLists(); // Recarrega as listas para mostrar a nova
+      await refreshLists();
     } catch (error: any) {
-      toast({
-        title: 'Erro ao criar a lista',
-        description: error.message,
-        variant: 'destructive',
-      });
+        // Adiciona o mesmo tratamento de erro para a criação da lista
+        if (error.status === 401) {
+             toast({
+                title: 'Sessão expirada',
+                description: 'Por favor, faça o login novamente.',
+                variant: 'destructive',
+            });
+            router.push('/login');
+        } else {
+            toast({
+                title: 'Erro ao criar a lista',
+                description: error.message || 'Ocorreu um erro inesperado.',
+                variant: 'destructive',
+            });
+        }
     }
   };
 
-  // Navega para a página de detalhes da lista
   const handleSelectList = (listId: string) => {
     router.push(`/todo-list/${listId}`);
   };
+
+  // Se estiver carregando e ainda não houver erro, podemos mostrar um loader
+  // Se um erro 401 ocorrer, o redirecionamento será iniciado.
+  if (isLoading) {
+    return <div className='text-center p-8'>Carregando...</div>;
+  }
 
   return (
     <div className='min-h-screen bg-background p-4'>
@@ -112,7 +141,6 @@ export default function TodoListClientPage() {
             <h1 className='text-2xl font-bold'>Minhas Listas de Tarefas</h1>
         </div>
 
-        {/* Formulário para Criar Nova Lista */}
         <div className='mb-8 p-4 border rounded-lg'>
             <form onSubmit={handleCreateList} className='flex items-center gap-4'>
                 <Input 
@@ -129,10 +157,7 @@ export default function TodoListClientPage() {
             </form>
         </div>
 
-        {/* Grid de Listas Existentes */}
-        {isLoading ? (
-          <div className='text-center p-8'>Carregando listas...</div>
-        ) : Object.keys(lists).length > 0 ? (
+        {Object.keys(lists).length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Object.entries(lists).map(([id, list]) => (
                     <div key={id} className="border rounded-lg p-4 flex flex-col justify-between hover:shadow-md transition-shadow">
