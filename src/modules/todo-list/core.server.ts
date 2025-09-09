@@ -2,28 +2,17 @@
 import { getFirestore } from "@/lib/firebase-admin.server";
 import { TodoList } from "./types";
 
-// Não inicialize a base de dados aqui no topo.
-// Em vez disso, obtenha a instância dentro de cada função.
+// Retornando à implementação original mais limpa.
+// A inicialização do Firestore é gerenciada pelo getFirestore().
 
 export async function getTodoLists(): Promise<Record<string, TodoList>> {
-    try {
-        console.log("Attempting to get Firestore instance...");
-        const db = getFirestore();
-        console.log("Firestore instance obtained. Attempting to access 'todoLists' collection.");
-        
-        const snapshot = await db.collection('todoLists').get();
-        console.log("'todoLists' collection snapshot retrieved successfully.");
-
-        const todoLists: Record<string, TodoList> = {};
-        snapshot.forEach(doc => {
-            todoLists[doc.id] = doc.data() as TodoList;
-        });
-        return todoLists;
-    } catch (error) {
-        console.error("FATAL ERROR in getTodoLists:", JSON.stringify(error, null, 2));
-        // Rethrow a more specific error to be caught by the API route
-        throw new Error(`Failed to retrieve data from Firestore. Original error: ${(error as Error).message}`);
-    }
+    const db = getFirestore();
+    const snapshot = await db.collection('todoLists').get();
+    const todoLists: Record<string, TodoList> = {};
+    snapshot.forEach(doc => {
+        todoLists[doc.id] = doc.data() as TodoList;
+    });
+    return todoLists;
 }
 
 export async function getTodoListById(listId: string): Promise<TodoList | null> {

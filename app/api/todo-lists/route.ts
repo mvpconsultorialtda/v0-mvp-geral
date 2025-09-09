@@ -1,11 +1,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import { getTodoLists, createTodoList } from "@/modules/todo-list/core.server";
 import { verifySession } from "@/lib/session";
+// CORRIGIDO: O caminho da importação foi ajustado para o local correto.
 import { defineAbilitiesFor } from "@/modules/access-control/ability";
+import { createTodoList, getTodoLists } from "@/modules/todo-list/core.server";
 import { TodoList } from "@/modules/todo-list/types";
 
-// GET: Retorna as listas de tarefas que o usuário tem permissão para ver.
+/**
+ * API para obter as listas de tarefas do usuário.
+ */
 export async function GET(req: NextRequest) {
   const user = await verifySession(req);
   if (!user) {
@@ -22,8 +25,8 @@ export async function GET(req: NextRequest) {
     for (const listId in allLists) {
       if (Object.prototype.hasOwnProperty.call(allLists, listId)) {
         const list = allLists[listId];
-        // CORREÇÃO: Passar o tipo 'TodoList' como string e o objeto para verificação de condições.
-        if (ability.can('read', 'TodoList', list)) {
+        // CORRIGIDO: Passa-se a instância do objeto diretamente para a verificação de condições.
+        if (ability.can('read', list)) {
           accessibleLists[listId] = list;
         }
       }
@@ -32,7 +35,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(accessibleLists);
   } catch (error: any) {
     console.error("Error reading data or checking permissions:", error);
-    // Adicionar mais detalhes do erro na resposta em desenvolvimento
     return NextResponse.json({ message: "Error reading data", error: error.message }, { status: 500 });
   }
 }
@@ -46,7 +48,6 @@ export async function POST(req: NextRequest) {
 
   const ability = defineAbilitiesFor(user);
   
-  // A verificação de criação já estava correta, pois não depende de uma instância de objeto.
   if (ability.cannot('create', 'TodoList')) {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
