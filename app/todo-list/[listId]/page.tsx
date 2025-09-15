@@ -20,22 +20,25 @@ async function fetchTodoList(listId: string): Promise<TodoList> {
         throw new Error('Failed to fetch list details');
     }
     const data = await res.json();
-    return {
-        ...data,
-        tasks: data.tasks.map((task: any) => ({ ...task, createdAt: new Date(task.createdAt), updatedAt: new Date(task.updatedAt) }))
-    };
+    // Garante que as datas sejam objetos Date
+    const tasks = data.tasks.map((task: any) => ({ ...task, createdAt: new Date(task.createdAt), updatedAt: new Date(task.updatedAt) }));
+    return { ...data, tasks };
 }
 
 async function createOrUpdateTaskApi(listId: string, taskData: Omit<Task, 'id'> | Partial<Task>): Promise<Task> {
-    const method = 'id' in taskData ? 'PATCH' : 'POST';
-    const res = await fetch(`/api/todo-lists/${listId}`, {
+    const isUpdating = 'id' in taskData && taskData.id;
+    const url = isUpdating ? `/api/todo-lists/${listId}/tasks/${taskData.id}` : `/api/todo-lists/${listId}/tasks`;
+    const method = isUpdating ? 'PATCH' : 'POST';
+
+    const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(taskData),
     });
+
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to ${'id' in taskData ? 'update' : 'create'} task`);
+        throw new Error(errorData.message || `Failed to ${isUpdating ? 'update' : 'create'} task`);
     }
     return res.json();
 }
@@ -76,8 +79,8 @@ export default function TodoListPage() {
         refreshData().finally(() => setIsLoading(false));
     }, [refreshData]);
 
-    const { mutate: createOrUpdateTask, isLoading: isSubmitting } = useApiMutation({
-        mutationFn: (taskData: Omit<Task, 'id'> | Partial<Task>) => createOrUpdateTaskApi(listId, taskData),
+    const { mutate: createOrUpdateTask, isLoading: isSubmitting } = useApiMutation<Task, Omit<Task, 'id'> | Partial<Task>>({
+        mutationFn: (taskData) => createOrUpdateTaskApi(listId, taskData),
         successMessage: `Task ${editingTodo ? 'updated' : 'created'} successfully!`,
         onSuccess: () => {
             refreshData();
@@ -86,16 +89,26 @@ export default function TodoListPage() {
         }
     });
 
-    const { mutate: deleteTask } = useApiMutation({
-        mutationFn: (taskId: string) => deleteTaskApi(listId, taskId),
+    const { mutate: deleteTask } = useApiMutation<void, string>({
+        mutationFn: (taskId) => deleteTaskApi(listId, taskId),
         successMessage: 'Task deleted successfully!',
         onSuccess: refreshData,
     });
 
-    const handleSubmit = (data: Omit<Task, 'id'>) => {
-        const taskData = editingTodo ? { ...editingTodo, ...data } : data;
-        createOrUpdateTask(taskData);
-    };
+    const handleSubmit = (data: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+      const taskPayload: Omit<Task, 'id'> = {
+          ...data,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+      };
+  
+      if (editingTodo) {
+          createOrUpdateTask({ ...editingTodo, ...data, updatedAt: new Date().toISOString() });
+      } else {
+          createOrUpdateTask(taskPayload);
+      }
+  };
+  
 
     const handleEdit = (todo: Task) => {
         setEditingTodo(todo);
@@ -155,7 +168,7 @@ export default function TodoListPage() {
                                 <TodoItem
                                     key={task.id}
                                     todo={task}
-                                    onStatusChange={(status) => createOrUpdateTask({ id: task.id, status })}
+                                    onStatusChange={(status) => createOrUpdateTask({ id: task.id, status, updatedAt: new Date().toISOString() })}
                                     onDelete={() => deleteTask(task.id)}
                                     onEdit={() => handleEdit(task)}
                                 />
