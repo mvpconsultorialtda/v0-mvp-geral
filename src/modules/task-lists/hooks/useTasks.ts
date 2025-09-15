@@ -75,7 +75,9 @@ export const useTasks = (listId: string | null) => {
 
   return {
     tasks: data,
-    isLoading: !error && !data && !!listId,
+        // CORREÇÃO: isLoading deve ser true apenas quando `data` é undefined (antes do fetch).
+    // Uma lista vazia `[]` é um dado válido e não deve ser um estado de carregamento.
+    isLoading: !error && data === undefined && !!listId,
     isError: error,
     addTask,
     updateTask: updateExistingTask,
