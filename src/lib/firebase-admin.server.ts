@@ -11,9 +11,25 @@ let firestore: admin.firestore.Firestore;
  */
 function ensureFirebaseInitialized() {
   if (!admin.apps.length) {
+    const {
+      FIREBASE_PROJECT_ID,
+      FIREBASE_CLIENT_EMAIL,
+      FIREBASE_PRIVATE_KEY
+    } = process.env;
+
+    if (!FIREBASE_PROJECT_ID || !FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
+      throw new Error('As variáveis de ambiente do Firebase (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY) não estão definidas.');
+    }
+
     try {
-      // A inicialização agora acontece aqui, de forma controlada.
-      admin.initializeApp();
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: FIREBASE_PROJECT_ID,
+          clientEmail: FIREBASE_CLIENT_EMAIL,
+          privateKey: FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        }),
+        projectId: FIREBASE_PROJECT_ID,
+      });
     } catch (error: any) {
       console.error("Firebase admin initialization error", error);
       throw new Error(`Could not initialize Firebase Admin SDK: ${error.message}`);
