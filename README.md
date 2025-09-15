@@ -2,7 +2,6 @@
 
 ## Visão do Projeto
 
-
 Este repositório não é apenas uma única aplicação, mas sim uma **coleção de módulos de negócio independentes e reutilizáveis**. A arquitetura é projetada com uma filosofia de "Legos", onde cada módulo em `src/modules` representa um "bloco de construção" (uma feature completa e autocontida).
 
 O diretório `app`, utilizando o Next.js App Router, atua como a plataforma de montagem. Ele consome os módulos de `src/modules` para construir uma aplicação web coesa, definindo as rotas e a apresentação final.
