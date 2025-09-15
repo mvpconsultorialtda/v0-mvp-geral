@@ -28,6 +28,9 @@ async function fetchTasksForList(listId: string): Promise<Task[]> {
     const res = await fetch(`/api/todo-lists/${listId}/tasks`);
     if (!res.ok) throw new Error('Failed to fetch tasks');
     const tasksData = await res.json();
+    if (!Array.isArray(tasksData)) {
+        return [];
+    }
     return tasksData.map((task: any) => ({ ...task, createdAt: new Date(task.createdAt), updatedAt: new Date(task.updatedAt) }));
 }
 
