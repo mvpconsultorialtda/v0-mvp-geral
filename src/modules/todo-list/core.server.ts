@@ -31,7 +31,8 @@ export async function getTodoListById(listId: string): Promise<TodoList | null> 
   if (!doc.exists) {
     return null;
   }
-  return { id: doc.id, ...doc.data() } as TodoList;
+  const data = doc.data();
+  return { id: doc.id, todos: [], ...data } as TodoList;
 }
 
 /**
