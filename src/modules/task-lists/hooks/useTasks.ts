@@ -5,7 +5,7 @@ import {
   updateTask,
   deleteTask,
 } from '../services/task-lists.service';
-import { Task } from '../types';
+import { Task, TaskStatus } from '../types';
 
 export const useTasks = (listId: string | null) => {
   const { data, error, mutate } = useSWR<Task[]>(
@@ -26,7 +26,8 @@ export const useTasks = (listId: string | null) => {
     }
   };
 
-  const updateExistingTask = async (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed'>>) => {
+  // O tipo de `updates` agora inclui `status`.
+  const updateExistingTask = async (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'status'>>) => {
     if (!listId) return;
     try {
       const updatedTask = await updateTask(taskId, updates);

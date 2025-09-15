@@ -1,18 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { Task, TaskList } from '../../types';
+import { Task, TaskList, TaskStatus } from '../../types';
+import { TasksList } from './TasksList'; // Importando o novo componente de lista
+import KanbanBoardView from '../../../../components/KanbanBoardView'; // Importando a visualização Kanban
 
 interface TaskDetailViewProps {
   activeList: TaskList | null;
   tasks: Task[];
   onAddTask: (text: string) => void;
-  onUpdateTask: (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed'>>) => void;
+  // A assinatura de onUpdateTask é expandida para incluir `status`.
+  onUpdateTask: (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'status'>>) => void;
   onDeleteTask: (taskId: string) => void;
 }
 
+// O TaskDetailView agora atua como um contêiner que gerencia a alternância de visualização.
 export const TaskDetailView = ({ activeList, tasks, onAddTask, onUpdateTask, onDeleteTask }: TaskDetailViewProps) => {
   const [newTaskText, setNewTaskText] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'board'>('list'); // Estado para controlar a visualização
 
   if (!activeList) {
     return (
@@ -33,29 +38,27 @@ export const TaskDetailView = ({ activeList, tasks, onAddTask, onUpdateTask, onD
   };
 
   return (
-    <section className="flex-1 p-8 bg-white">
-      <h2 className="text-3xl font-bold text-black mb-8">{activeList.name}</h2>
-
-      <div className="space-y-4 mb-8">
-        {tasks.map((task) => (
-          <li key={task.id} className="flex items-center p-4 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <input
-              type="checkbox"
-              checked={task.completed}
-              onChange={() => onUpdateTask(task.id, { completed: !task.completed })}
-              className="mr-4 h-5 w-5 rounded text-black focus:ring-black border-gray-300"
-            />
-            <span className={`flex-1 text-lg ${task.completed ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-              {task.text}
-            </span>
-            <button onClick={() => onDeleteTask(task.id)} className="text-gray-400 hover:text-red-500 font-semibold py-1 px-3 rounded-md transition-colors">
-              Excluir
-            </button>
-          </li>
-        ))}
+    <section className="flex-1 p-8 bg-white flex flex-col h-full">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-3xl font-bold text-black">{activeList.name}</h2>
+        {/* Botões para alternar a visualização */}
+        <div className="flex space-x-2">
+          <button onClick={() => setViewMode('list')} className={`px-4 py-2 rounded-md text-sm font-medium ${viewMode === 'list' ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'}`}>Lista</button>
+          <button onClick={() => setViewMode('board')} className={`px-4 py-2 rounded-md text-sm font-medium ${viewMode === 'board' ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'}`}>Quadro</button>
+        </div>
       </div>
 
-      <div className="mt-6">
+      {/* Renderização condicional da visualização */}
+      <div className="flex-1 overflow-y-auto">
+        {viewMode === 'list' ? (
+          <TasksList tasks={tasks} onUpdateTask={onUpdateTask} onDeleteTask={onDeleteTask} />
+        ) : (
+          <KanbanBoardView tasks={tasks} />
+        )}
+      </div>
+      
+      {/* Formulário para adicionar nova tarefa */}
+      <div className="mt-6 flex-shrink-0">
         <input
           type="text"
           value={newTaskText}

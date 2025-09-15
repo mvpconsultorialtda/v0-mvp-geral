@@ -1,4 +1,4 @@
-import { Task, TaskList } from '../types';
+import { Task, TaskList, TaskStatus } from '../types';
 
 const API_BASE_URL = '/api';
 
@@ -50,7 +50,8 @@ export const createTask = async (listId: string, text: string, order: number): P
   return response.json();
 };
 
-export const updateTask = async (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'order'>>): Promise<Task> => {
+// A função updateTask agora aceita `status` no objeto de atualizações.
+export const updateTask = async (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'status' | 'order'>>): Promise<Task> => {
   const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
     method: 'PATCH',
     headers: {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '../../../../../lib/firebase/admin';
+import { TaskStatus } from '../../../../../src/modules/task-lists/types';
 
 // GET /api/lists/[listId]/tasks
 // Obtém as tarefas de uma lista específica.
@@ -41,6 +42,7 @@ export async function POST(request: Request, { params }: { params: { listId: str
       listId,
       text,
       completed: false,
+      status: 'A Fazer' as TaskStatus, // Status inicial padrão
       order,
       createdAt: new Date(),
     };
