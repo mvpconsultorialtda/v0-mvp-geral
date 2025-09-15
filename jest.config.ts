@@ -12,6 +12,11 @@ const commonModuleNameMapper = {
   '^@/(.*)$': '<rootDir>/src/$1',
 };
 
+// Configuração de transformação para usar o Babel
+const transform = {
+  '^.+\\.tsx?$': ['babel-jest', { presets: ['next/babel'] }],
+};
+
 const config: Config = {
   coverageProvider: 'v8',
   projects: [
@@ -25,8 +30,8 @@ const config: Config = {
         '**/__tests__/components/**/*.test.tsx',
         '**/__tests__/test-utils.test.tsx'
       ],
-      // Aplica o mapeador corrigido.
       moduleNameMapper: commonModuleNameMapper,
+      transform, // Adiciona a transformação para o cliente
     },
     {
       // --- Configuração para Testes de Servidor (API, node) ---
@@ -34,8 +39,8 @@ const config: Config = {
       testEnvironment: 'node',
       setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
       testMatch: ['**/__tests__/api/**/*.test.ts'],
-      // Aplica o mapeador corrigido.
       moduleNameMapper: commonModuleNameMapper,
+      transform, // Adiciona a transformação para o servidor
     },
   ],
 };
