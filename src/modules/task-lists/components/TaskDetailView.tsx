@@ -3,21 +3,19 @@
 import { useState } from 'react';
 import { Task, TaskList, TaskStatus } from '../../types';
 import { TasksList } from './TasksList'; // Importando o novo componente de lista
-import KanbanBoardView from '../../../../components/KanbanBoardView'; // Importando a visualização Kanban
+import KanbanBoardView from '../../../components/KanbanBoardView'; // Caminho corrigido
 
 interface TaskDetailViewProps {
   activeList: TaskList | null;
   tasks: Task[];
   onAddTask: (text: string) => void;
-  // A assinatura de onUpdateTask é expandida para incluir `status`.
   onUpdateTask: (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'status'>>) => void;
   onDeleteTask: (taskId: string) => void;
 }
 
-// O TaskDetailView agora atua como um contêiner que gerencia a alternância de visualização.
 export const TaskDetailView = ({ activeList, tasks, onAddTask, onUpdateTask, onDeleteTask }: TaskDetailViewProps) => {
   const [newTaskText, setNewTaskText] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'board'>('list'); // Estado para controlar a visualização
+  const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
 
   if (!activeList) {
     return (
@@ -41,14 +39,12 @@ export const TaskDetailView = ({ activeList, tasks, onAddTask, onUpdateTask, onD
     <section className="flex-1 p-8 bg-white flex flex-col h-full">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold text-black">{activeList.name}</h2>
-        {/* Botões para alternar a visualização */}
         <div className="flex space-x-2">
           <button onClick={() => setViewMode('list')} className={`px-4 py-2 rounded-md text-sm font-medium ${viewMode === 'list' ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'}`}>Lista</button>
           <button onClick={() => setViewMode('board')} className={`px-4 py-2 rounded-md text-sm font-medium ${viewMode === 'board' ? 'bg-black text-white' : 'bg-gray-200 text-gray-700'}`}>Quadro</button>
         </div>
       </div>
 
-      {/* Renderização condicional da visualização */}
       <div className="flex-1 overflow-y-auto">
         {viewMode === 'list' ? (
           <TasksList tasks={tasks} onUpdateTask={onUpdateTask} onDeleteTask={onDeleteTask} />
@@ -57,7 +53,6 @@ export const TaskDetailView = ({ activeList, tasks, onAddTask, onUpdateTask, onD
         )}
       </div>
       
-      {/* Formulário para adicionar nova tarefa */}
       <div className="mt-6 flex-shrink-0">
         <input
           type="text"
