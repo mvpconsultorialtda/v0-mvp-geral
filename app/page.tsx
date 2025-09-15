@@ -17,7 +17,7 @@ export default function HomePage() {
           <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
             <h2 className="text-2xl font-semibold text-black mb-3">Lista de Tarefas</h2>
             <p className="text-gray-500 mb-6">Organize suas tarefas com categorias, prioridades e filtros.</p>
-            <Link href="/tasks" className="block w-full text-center bg-black hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+            <Link href="/lists" className="block w-full text-center bg-black hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
               Abrir Módulo
             </Link>
           </div>
