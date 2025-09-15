@@ -88,10 +88,12 @@ export default function TodoListPage() {
                 fetchListDetails(listId),
                 fetchTasksForList(listId)
             ]);
-            setList(listData);
-            setTasks(tasksData);
+            setList(listData ?? null);
+            setTasks(tasksData ?? []);
         } catch (error: any) {
             addToast(error.message || 'Error loading data', 'error');
+            setList(null); // Garante que a lista seja nula em caso de erro
+            setTasks([]); // Garante que as tarefas sejam um array vazio em caso de erro
             router.push('/todo-list');
         }
     }, [listId, addToast, router]);
@@ -153,7 +155,7 @@ export default function TodoListPage() {
         setIsFormVisible(false);
     };
 
-    const filteredTodos = useMemo(() => tasks.filter(todo => filter.status === 'all' || todo.status === filter.status), [tasks, filter]);
+    const filteredTodos = useMemo(() => (tasks ?? []).filter(todo => filter.status === 'all' || todo.status === filter.status), [tasks, filter]);
 
     // --- Render --- //
     if (isLoading) {
