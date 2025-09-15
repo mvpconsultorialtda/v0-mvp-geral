@@ -14,6 +14,25 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Função para sincronizar o cookie de sessão com o servidor
+async function syncSessionCookie(user: User | null) {
+  if (user) {
+    const idToken = await user.getIdToken();
+    await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ idToken }),
+    });
+  } else {
+    // Se não há usuário, chama a rota de logout para limpar o cookie
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+    });
+  }
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [ability, setAbility] = useState<AppAbility>(defineAbilitiesFor(null)); // Habilidade inicial de convidado
@@ -21,11 +40,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
+      // Sincroniza o cookie de sessão a cada mudança de token/usuário
+      await syncSessionCookie(firebaseUser);
+
       if (firebaseUser) {
         const tokenResult = await firebaseUser.getIdTokenResult();
         const userIsAdmin = !!tokenResult.claims.admin;
         
-        // O objeto do usuário a ser passado para as habilidades
         const permissionUser = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,

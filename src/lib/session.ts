@@ -25,8 +25,8 @@ export async function verifySession(request: NextRequest): Promise<Authenticated
 
   try {
     // Usa o SDK Admin para verificar a validade do cookie de sessão.
-    // O segundo argumento `true` foi alterado para `false` para fins de depuração.
-    const decodedToken = await getAdminAuth().verifySessionCookie(sessionToken, false);
+    // O segundo argumento foi revertido para `true` para reativar a verificação de revogação.
+    const decodedToken = await getAdminAuth().verifySessionCookie(sessionToken, true);
 
     // O 'role' é esperado como uma custom claim no token.
     // Se não estiver presente, o acesso pode ser negado ou um role padrão pode ser assumido.

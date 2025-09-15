@@ -23,22 +23,13 @@ export default function LoginForm() {
     setError(null)
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password)
-      const token = await userCredential.user.getIdToken()
+      // 1. Apenas faz o login com o Firebase no cliente
+      await signInWithEmailAndPassword(auth, email, password)
 
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ idToken: token }),
-      })
+      // 2. O onIdTokenChanged no AppProvider cuidará da criação da sessão no backend.
+      //    O redirecionamento pode ser feito aqui, pois o AppProvider garantirá a sessão.
+      router.push('/')
 
-      if (res.ok) {
-        router.push('/')
-      } else {
-        throw new Error('Failed to create session')
-      }
     } catch (error: any) {
       setError('Email ou senha inválidos. Por favor, tente novamente.')
       console.error(error)
