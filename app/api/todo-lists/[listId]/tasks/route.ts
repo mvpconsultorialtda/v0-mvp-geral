@@ -1,60 +1,90 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { readDb, writeDb } from "@/lib/db"; // Usando o módulo centralizado
+import { verifySession } from '@/lib/session';
+import { defineAbilitiesFor } from '@/modules/access-control/ability';
+import { getTodoListById, getTasks, createTask } from '@/modules/todo-list/core.server';
+import { Task } from '@/modules/todo-list/types';
+
+interface RouteParams {
+  params: { listId: string };
+}
 
 /**
  * GET /api/todo-lists/[listId]/tasks
  * Busca todas as tarefas para uma lista de tarefas específica.
  */
-export async function GET(req: NextRequest, { params }: { params: { listId: string } }) {
-  const { listId } = params;
-  const db = await readDb();
-
-  // A função readDb garante que db.todoLists exista, então essa verificação é segura.
-  if (!db.todoLists[listId]) {
-    return NextResponse.json({ error: 'List not found' }, { status: 404 });
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  const user = await verifySession(req);
+  if (!user) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  // readDb garante que db.tasks exista. Se não houver tarefas, Object.values retornará [].
-  const tasksForList = Object.values(db.tasks).filter((task: any) => task.listId === listId);
+  const { listId } = params;
+  try {
+    const list = await getTodoListById(listId);
+    if (!list) {
+      return NextResponse.json({ message: "List not found" }, { status: 404 });
+    }
 
-  return NextResponse.json(tasksForList);
+    const ability = defineAbilitiesFor(user);
+    if (ability.cannot('read', list)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    const tasks = await getTasks(listId);
+    return NextResponse.json(Object.values(tasks));
+
+  } catch (error) {
+    console.error(`Error fetching tasks for list ${listId}:`, error);
+    return NextResponse.json({ message: "Error fetching tasks" }, { status: 500 });
+  }
 }
 
 /**
  * POST /api/todo-lists/[listId]/tasks
  * Cria uma nova tarefa para uma lista de tarefas específica.
  */
-export async function POST(req: NextRequest, { params }: { params: { listId: string } }) {
+export async function POST(req: NextRequest, { params }: RouteParams) {
+  const user = await verifySession(req);
+  if (!user) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
   const { listId } = params;
-  const db = await readDb();
+  try {
+    const list = await getTodoListById(listId);
+    if (!list) {
+      return NextResponse.json({ message: "List not found" }, { status: 404 });
+    }
 
-  if (!db.todoLists[listId]) {
-    return NextResponse.json({ error: 'List not found' }, { status: 404 });
+    const ability = defineAbilitiesFor(user);
+    if (ability.cannot('update', list)) { // Precisa de permissão para 'atualizar' a lista para adicionar tarefas
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { title } = body;
+
+    if (!title) {
+      return NextResponse.json({ message: "Title is required" }, { status: 400 });
+    }
+
+    const newTaskId = `task_${Date.now()}`;
+    const newTask: Omit<Task, 'id'> = {
+      listId,
+      title,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      ...body,
+    };
+
+    await createTask(listId, newTaskId, newTask);
+
+    return NextResponse.json({ ...newTask, id: newTaskId }, { status: 201 });
+
+  } catch (error) {
+    console.error(`Error creating task for list ${listId}:`, error);
+    return NextResponse.json({ message: "Error creating task" }, { status: 500 });
   }
-
-  const body = await req.json();
-  const { title } = body;
-
-  if (!title) {
-    return NextResponse.json({ error: 'Title is required' }, { status: 400 });
-  }
-
-  const newTaskId = `task_${Date.now()}`;
-  const newTask = {
-    id: newTaskId,
-    listId,
-    title,
-    status: 'pending', // Status padrão
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    // outros campos podem ser adicionados aqui a partir do body
-    ...body,
-  };
-
-  db.tasks[newTaskId] = newTask;
-  await writeDb(db);
-
-  // Retorna o objeto completo da nova tarefa, garantindo que o cliente tenha todos os dados.
-  return NextResponse.json(newTask, { status: 201 });
 }

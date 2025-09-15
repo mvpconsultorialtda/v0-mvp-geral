@@ -1,0 +1,64 @@
+
+// Importa os manipuladores da API que vamos testar. Os aliases @/ agora funcionam corretamente.
+import { POST as handleCreateList, GET as handleGetLists } from '@/app/api/todo-lists/route';
+import { POST as handleCreateTask, GET as handleGetTasks } from '@/app/api/todo-lists/[listId]/tasks/route';
+import * as session from '@/lib/session';
+
+// Não são necessárias mais simulações para o Firebase aqui. 
+// jest.setup.ts cuida da simulação completa do 'firebase-admin' antes que qualquer teste seja executado.
+
+// Simula nosso próprio módulo de sessão.
+jest.mock('@/lib/session');
+
+describe('API de Listas de Tarefas - Fluxo de Sucesso', () => {
+  const mockUser = {
+    uid: 'user-123',
+    role: 'user',
+    email: 'user@example.com',
+  };
+
+  // Cria uma referência tipada para o módulo de sessão simulado.
+  const mockedSession = session as jest.Mocked<typeof session>;
+
+  beforeEach(() => {
+    // Limpa o estado de todas as simulações antes de cada teste.
+    jest.clearAllMocks();
+    // Garante que a verificação da sessão seja bem-sucedida para todos os testes neste conjunto.
+    mockedSession.verifySession.mockResolvedValue(mockUser);
+  });
+
+  it('deve permitir que um usuário crie uma lista e adicione uma tarefa a ela', async () => {
+    // --- Etapa 1: Criar a Lista ---
+    const listName = 'Minha Nova Lista de Compras';
+    const createListReq = new Request('http://localhost/api/todo-lists', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: listName }),
+    });
+
+    // Executa o manipulador da API para criar a lista.
+    const createListResponse = await handleCreateList(createListReq as any);
+    const listData = await createListResponse.json();
+    const listId = listData.id; // Assume que a API retorna o objeto da lista com um ID.
+
+    expect(createListResponse.status).toBe(201);
+    expect(listData.name).toBe(listName);
+    expect(listId).toBeDefined();
+
+    // --- Etapa 2: Criar a Tarefa ---
+    const taskTitle = 'Comprar leite';
+    const createTaskReq = new Request(`http://localhost/api/todo-lists/${listId}/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: taskTitle }),
+    });
+
+    // Executa o manipulador da API para criar a tarefa, passando o listId nos parâmetros.
+    const createTaskResponse = await handleCreateTask(createTaskReq as any, { params: { listId } });
+    const taskData = await createTaskResponse.json();
+
+    expect(createTaskResponse.status).toBe(201);
+    expect(taskData.title).toBe(taskTitle);
+  });
+
+});

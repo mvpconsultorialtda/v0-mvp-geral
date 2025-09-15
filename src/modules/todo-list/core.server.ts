@@ -1,76 +1,112 @@
 
-// Importa as funções de acesso ao banco de dados do módulo centralizado.
-import { readDb, writeDb } from '@/lib/db';
-import { TodoList } from './types';
+import { getFirestore } from '@/lib/firebase-admin.server';
+import { TodoList, Task } from './types';
+import { FieldValue } from 'firebase-admin/firestore';
+
+const db = getFirestore();
 
 // --- Funções de Lógica de Negócio (Exportadas) ---
 
 /**
- * Retorna todas as listas de tarefas.
+ * Retorna todas as listas de tarefas do Firestore.
  */
 export async function getTodoLists(): Promise<Record<string, TodoList>> {
-  const db = await readDb();
-  // A função readDb garante que db.todoLists sempre seja um objeto.
-  return db.todoLists;
+  const listsSnapshot = await db.collection('todo_lists').get();
+  if (listsSnapshot.empty) {
+    return {};
+  }
+  const lists: Record<string, TodoList> = {};
+  listsSnapshot.forEach(doc => {
+    lists[doc.id] = doc.data() as TodoList;
+  });
+  return lists;
 }
 
 /**
- * Retorna uma lista de tarefas específica pelo seu ID.
+ * Retorna uma lista de tarefas específica pelo seu ID do Firestore.
  */
 export async function getTodoListById(listId: string): Promise<TodoList | null> {
-  const db = await readDb();
-  const list = db.todoLists?.[listId];
-  // Retorna a lista com seu ID se encontrada, caso contrário null.
-  return list ? { ...list, id: listId } : null;
+  const docRef = db.collection('todo_lists').doc(listId);
+  const doc = await docRef.get();
+  if (!doc.exists) {
+    return null;
+  }
+  return { id: doc.id, ...doc.data() } as TodoList;
 }
 
 /**
- * Cria uma nova lista de tarefas.
+ * Cria uma nova lista de tarefas no Firestore.
  */
 export async function createTodoList(listId: string, todoList: Omit<TodoList, 'id' | 'todos'>): Promise<void> {
-  const db = await readDb();
-  // readDb garante que db.todoLists exista.
-  db.todoLists[listId] = todoList;
-  await writeDb(db);
+  const docRef = db.collection('todo_lists').doc(listId);
+  await docRef.set(todoList);
 }
 
 /**
- * Atualiza os dados de uma lista de tarefas (ex: renomear).
+ * Atualiza os dados de uma lista de tarefas no Firestore.
  */
 export async function updateTodoList(listId: string, todoList: Partial<Omit<TodoList, 'id' | 'todos'>>): Promise<void> {
-  const db = await readDb();
-  if (db.todoLists?.[listId]) {
-    db.todoLists[listId] = { ...db.todoLists[listId], ...todoList };
-    await writeDb(db);
-  }
+  const docRef = db.collection('todo_lists').doc(listId);
+  await docRef.update(todoList);
 }
 
 /**
- * Deleta uma lista de tarefas e todas as tarefas associadas a ela (exclusão em cascata).
+ * Deleta uma lista de tarefas e todas as suas tarefas em uma subcoleção.
  */
 export async function deleteTodoList(listId: string): Promise<void> {
-  const db = await readDb();
-  
-  // Se a lista não existe, não há nada a fazer.
-  if (!db.todoLists?.[listId]) {
-    console.warn(`Attempted to delete non-existent list with ID: ${listId}`);
-    return;
+  const listRef = db.collection('todo_lists').doc(listId);
+
+  // Para deletar a subcoleção, precisamos listar e deletar os documentos individualmente.
+  const tasksSnapshot = await listRef.collection('tasks').get();
+  if (!tasksSnapshot.empty) {
+    const batch = db.batch();
+    tasksSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
   }
 
-  // Deleta a lista.
-  delete db.todoLists[listId];
+  // Agora deleta o documento principal da lista.
+  await listRef.delete();
+}
 
-  // Filtra as tarefas, mantendo apenas aquelas que NÃO pertencem à lista deletada.
-  // A função readDb garante que db.tasks seja sempre um objeto.
-  const remainingTasks = Object.entries(db.tasks).reduce((acc, [taskId, task]) => {
-    if ((task as any).listId !== listId) {
-      acc[taskId] = task;
-    }
-    return acc;
-  }, {} as Record<string, any>);
+// --- Funções de Tarefas ---
 
-  db.tasks = remainingTasks;
-  
-  // Escreve o estado final no banco de dados.
-  await writeDb(db);
+/**
+ * Retorna todas as tarefas de uma lista específica.
+ */
+export async function getTasks(listId: string): Promise<Record<string, Task>> {
+  const tasksSnapshot = await db.collection('todo_lists').doc(listId).collection('tasks').get();
+  if (tasksSnapshot.empty) {
+    return {};
+  }
+  const tasks: Record<string, Task> = {};
+  tasksSnapshot.forEach(doc => {
+    tasks[doc.id] = doc.data() as Task;
+  });
+  return tasks;
+}
+
+/**
+ * Adiciona uma nova tarefa a uma lista.
+ */
+export async function createTask(listId: string, taskId: string, task: Omit<Task, 'id'>): Promise<void> {
+  const taskRef = db.collection('todo_lists').doc(listId).collection('tasks').doc(taskId);
+  await taskRef.set(task);
+}
+
+/**
+ * Atualiza uma tarefa existente.
+ */
+export async function updateTask(listId: string, taskId: string, task: Partial<Omit<Task, 'id'>>): Promise<void> {
+  const taskRef = db.collection('todo_lists').doc(listId).collection('tasks').doc(taskId);
+  await taskRef.update(task);
+}
+
+/**
+ * Deleta uma tarefa.
+ */
+export async function deleteTask(listId: string, taskId: string): Promise<void> {
+  const taskRef = db.collection('todo_lists').doc(listId).collection('tasks').doc(taskId);
+  await taskRef.delete();
 }

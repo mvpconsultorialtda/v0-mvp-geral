@@ -1,20 +1,19 @@
 
-'use client'
+'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Plus, LayoutGrid, List, Sun, Moon, Share2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/components/ui/use-toast';
+import { useNotification } from '@/context/NotificationProvider';
+import { useApiMutation } from '@/hooks/useApiMutation';
 import { TodoItem } from '@/modules/todo-list/components/TodoItem';
 import { TodoForm } from '@/modules/todo-list/components/TodoForm';
 import { TodoFilters } from '@/modules/todo-list/components/TodoFilters';
-import type { Todo, TodoFilter, TodoList } from '@/modules/todo-list/types';
+import type { Todo, TodoFilter, TodoList, Task } from '@/modules/todo-list/types';
 import { GoBackButton } from '@/components/ui/go-back-button';
 
-// A página agora é dinâmica para forçar a renderização no lado do cliente
 export const dynamic = 'force-dynamic';
 
 // --- API Helper Functions --- //
@@ -25,154 +24,126 @@ async function fetchListDetails(listId: string): Promise<TodoList> {
     return res.json();
 }
 
-async function fetchTasksForList(listId: string): Promise<Todo[]> {
+async function fetchTasksForList(listId: string): Promise<Task[]> {
     const res = await fetch(`/api/todo-lists/${listId}/tasks`);
     if (!res.ok) throw new Error('Failed to fetch tasks');
     const tasksData = await res.json();
-    // Garante que as datas sejam objetos Date
-    return tasksData.map((task: any) => ({
-        ...task,
-        createdAt: new Date(task.createdAt),
-        updatedAt: new Date(task.updatedAt),
-    }));
+    return tasksData.map((task: any) => ({ ...task, createdAt: new Date(task.createdAt), updatedAt: new Date(task.updatedAt) }));
 }
+
+async function createTaskApi({ listId, taskData }: { listId: string, taskData: Omit<Task, 'id' | 'listId'> }): Promise<Task> {
+    const res = await fetch(`/api/todo-lists/${listId}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to create task');
+    }
+    return res.json();
+}
+
+async function updateTaskApi({ listId, taskId, taskData }: { listId: string, taskId: string, taskData: Partial<Omit<Task, 'id'>> }): Promise<void> {
+    const res = await fetch(`/api/todo-lists/${listId}/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData),
+    });
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to update task');
+    }
+}
+
+async function deleteTaskApi({ listId, taskId }: { listId: string, taskId: string }): Promise<void> {
+    const res = await fetch(`/api/todo-lists/${listId}/tasks/${taskId}`, { method: 'DELETE' });
+    if (res.status !== 204) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete task');
+    }
+}
+
 
 // --- Main Component --- //
 
 export default function TodoListPage() {
-    // Estados separados para lista e tarefas
     const [list, setList] = useState<TodoList | null>(null);
-    const [tasks, setTasks] = useState<Todo[]>([]);
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<TodoFilter>({ status: 'all' });
-    const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+    const [editingTodo, setEditingTodo] = useState<Task | null>(null);
     const [isFormVisible, setIsFormVisible] = useState(false);
     
-    const { toast } = useToast();
+    const { addToast } = useNotification();
     const params = useParams();
     const router = useRouter();
     const listId = params.listId as string;
 
-    // Efeito para carregar dados iniciais da lista e das tarefas
-    useEffect(() => {
+    // --- Data Fetching --- //
+    const refreshData = useCallback(async () => {
         if (!listId) return;
-
-        const loadData = async () => {
-            setIsLoading(true);
-            try {
-                // Carrega detalhes da lista e tarefas em paralelo
-                const [listData, tasksData] = await Promise.all([
-                    fetchListDetails(listId),
-                    fetchTasksForList(listId)
-                ]);
-                setList(listData);
-                setTasks(tasksData);
-            } catch (error: any) {
-                toast({
-                    title: 'Erro ao carregar dados',
-                    description: error.message,
-                    variant: 'destructive',
-                });
-                router.push('/todo-list');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        loadData();
-    }, [listId, toast, router]);
-
-    const filteredTodos = useMemo(() => {
-        return tasks.filter((todo) => {
-            if (filter.status === 'all') return true;
-            return todo.status === filter.status;
-        });
-    }, [tasks, filter]);
-
-    // --- CRUD Handlers (Refatorados) --- //
-
-    const handleAddTodo = async (todoData: Omit<Todo, 'id' | 'createdAt' | 'updatedAt' | 'listId'>) => {
         try {
-            const res = await fetch(`/api/todo-lists/${listId}/tasks`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(todoData),
-            });
-            if (!res.ok) throw new Error('Failed to create task');
-            const newTodo = await res.json();
-
-            // Atualização otimista
-            setTasks(prevTasks => [...prevTasks, { ...newTodo, createdAt: new Date(newTodo.createdAt), updatedAt: new Date(newTodo.updatedAt) }]);
-            setIsFormVisible(false);
-            toast({ title: 'Tarefa Adicionada!', description: `A tarefa '${newTodo.title}' foi criada.` });
+            const [listData, tasksData] = await Promise.all([
+                fetchListDetails(listId),
+                fetchTasksForList(listId)
+            ]);
+            setList(listData);
+            setTasks(tasksData);
         } catch (error: any) {
-            toast({ title: 'Erro ao adicionar tarefa', description: error.message, variant: 'destructive' });
+            addToast(error.message || 'Error loading data', 'error');
+            router.push('/todo-list');
         }
-    };
+    }, [listId, addToast, router]);
 
-    const handleUpdateTodo = async (todoData: Partial<Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>>) => {
-        if (!editingTodo) return;
+    useEffect(() => {
+        setIsLoading(true);
+        refreshData().finally(() => setIsLoading(false));
+    }, [refreshData]);
 
-        try {
-            const res = await fetch(`/api/tasks/${editingTodo.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(todoData),
-            });
-            if (!res.ok) throw new Error('Failed to update task');
-            const updatedTodo = await res.json();
+    // --- API Mutations --- //
 
-            // Atualização otimista
-            setTasks(tasks.map(t => t.id === editingTodo.id ? { ...t, ...updatedTodo, updatedAt: new Date(updatedTodo.updatedAt) } : t));
+    const { mutate: addTask, isLoading: isAdding } = useApiMutation({
+        mutationFn: (taskData: Omit<Task, 'id' | 'listId'>) => createTaskApi({ listId, taskData }),
+        successMessage: 'Task created successfully!',
+        onSuccess: () => {
+            refreshData();
+            setIsFormVisible(false);
+        }
+    });
+
+    const { mutate: updateTask, isLoading: isUpdating } = useApiMutation({
+        mutationFn: (taskData: Partial<Omit<Task, 'id'>>) => updateTaskApi({ listId, taskId: editingTodo!.id, taskData }),
+        successMessage: 'Task updated successfully!',
+        onSuccess: () => {
+            refreshData();
             setEditingTodo(null);
             setIsFormVisible(false);
-            toast({ title: 'Tarefa Atualizada!', description: `A tarefa '${updatedTodo.title}' foi atualizada.` });
-        } catch (error: any) {
-            toast({ title: 'Erro ao atualizar tarefa', description: error.message, variant: 'destructive' });
+        }
+    });
+    
+    const { mutate: deleteTask } = useApiMutation({
+        mutationFn: (taskId: string) => deleteTaskApi({ listId, taskId }),
+        successMessage: 'Task deleted successfully!',
+        onSuccess: refreshData,
+    });
+
+    const { mutate: changeStatus } = useApiMutation({
+        mutationFn: ({ taskId, status }: { taskId: string, status: Task['status'] }) => updateTaskApi({ listId, taskId, taskData: { status } }),
+        successMessage: 'Task status updated!',
+        onSuccess: refreshData
+    });
+
+    // --- Handlers --- //
+    const handleSubmit = (data: Omit<Task, 'id' | 'listId'>) => {
+        if (editingTodo) {
+            updateTask(data);
+        } else {
+            addTask(data);
         }
     };
 
-    const handleDeleteTodo = async (id: string) => {
-        const todo = tasks.find(t => t.id === id);
-        if (todo && confirm(`Tem certeza que deseja remover a tarefa '${todo.title}'?`)) {
-            try {
-                const res = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-                if (res.status !== 204) throw new Error('Failed to delete task');
-
-                // Atualização otimista
-                setTasks(tasks.filter(t => t.id !== id));
-                toast({ title: 'Tarefa Removida', variant: 'destructive' });
-            } catch (error: any) {
-                toast({ title: 'Erro ao remover tarefa', description: error.message, variant: 'destructive' });
-            }
-        }
-    };
-
-    const handleStatusChange = async (id: string, status: 'pending' | 'in-progress' | 'completed') => {
-        const originalTasks = tasks; // Guardar estado original para reverter em caso de erro
-        
-        // Atualização otimista
-        setTasks(tasks.map(t => t.id === id ? { ...t, status } : t));
-
-        try {
-            const res = await fetch(`/api/tasks/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status }),
-            });
-            if (!res.ok) throw new Error('Failed to update status');
-            // Não precisa fazer nada com a resposta, a UI já foi atualizada.
-
-        } catch (error: any) {
-            // Reverter em caso de erro
-            setTasks(originalTasks);
-            toast({ title: 'Erro ao mudar status', description: error.message, variant: 'destructive' });
-        }
-    };
-
-    // --- Handlers de UI --- //
-
-    const handleEdit = (todo: Todo) => {
+    const handleEdit = (todo: Task) => {
         setEditingTodo(todo);
         setIsFormVisible(true);
     };
@@ -182,23 +153,15 @@ export default function TodoListPage() {
         setIsFormVisible(false);
     };
 
-    const handleFilterChange = (newFilter: TodoFilter) => setFilter(newFilter);
-    const handleClearFilters = () => setFilter({ status: 'all' });
+    const filteredTodos = useMemo(() => tasks.filter(todo => filter.status === 'all' || todo.status === filter.status), [tasks, filter]);
 
-    // --- Renderização --- //
-
+    // --- Render --- //
     if (isLoading) {
-        return <div className='text-center p-8'>Carregando tarefas...</div>;
+        return <div className='text-center p-8'>Loading tasks...</div>;
     }
 
     if (!list) {
-        return (
-            <div className='text-center p-8'>
-                <h2 className='text-xl font-semibold'>Lista não encontrada.</h2>
-                <p className='text-muted-foreground mt-2'>Verifique o ID da lista ou volte para a página inicial.</p>
-                <GoBackButton href="/todo-list" />
-            </div>
-        );
+        return <div className='text-center p-8'><h2 className='text-xl font-semibold'>List not found.</h2><GoBackButton href="/todo-list" /></div>;
     }
 
     return (
@@ -207,29 +170,20 @@ export default function TodoListPage() {
                 <GoBackButton href="/todo-list" />
                 <div className='flex items-center justify-between mb-6'>
                     <h1 className='text-2xl font-bold truncate'>{list.name}</h1>
-                    <div className='flex items-center gap-2'>
-                        <Button size='sm' onClick={() => setIsFormVisible(true)}>
-                            <Plus className='h-4 w-4 mr-2' />
-                            Nova Tarefa
-                        </Button>
-                    </div>
+                    <Button size='sm' onClick={() => setIsFormVisible(true)} disabled={isFormVisible}>
+                        <Plus className='h-4 w-4 mr-2' /> New Task
+                    </Button>
                 </div>
 
-                <TodoFilters
-                    filter={filter}
-                    categories={[]}
-                    onFilterChange={handleFilterChange}
-                    onClearFilters={handleClearFilters}
-                />
+                <TodoFilters filter={filter} onFilterChange={setFilter} onClearFilters={() => setFilter({ status: 'all' })} />
 
                 {isFormVisible && (
                     <div className='my-8'>
                         <TodoForm
                             todo={editingTodo}
-                            categories={[]}
-                            // Ajuste para passar os dados corretos para a função de submit
-                            onSubmit={(data) => editingTodo ? handleUpdateTodo(data) : handleAddTodo(data as any)}
+                            onSubmit={handleSubmit}
                             onCancel={handleFormCancel}
+                            isSubmitting={isAdding || isUpdating}
                         />
                     </div>
                 )}
@@ -241,16 +195,16 @@ export default function TodoListPage() {
                                 <TodoItem
                                     key={todo.id}
                                     todo={todo}
-                                    onStatusChange={handleStatusChange}
-                                    onDelete={handleDeleteTodo}
-                                    onEdit={handleEdit}
+                                    onStatusChange={(status) => changeStatus({ taskId: todo.id, status })}
+                                    onDelete={() => deleteTask(todo.id)}
+                                    onEdit={() => handleEdit(todo)}
                                 />
                             ))}
                         </div>
                     ) : (
                         <div className='text-center p-8 border-dashed border-2 rounded-lg'>
-                            <h2 className='text-xl font-semibold'>Nenhuma tarefa encontrada.</h2>
-                            <p className='text-muted-foreground mt-2'>Adicione sua primeira tarefa ou ajuste os filtros.</p>
+                            <h2 className='text-xl font-semibold'>No tasks found.</h2>
+                            <p className='text-muted-foreground mt-2'>Add your first task or adjust the filters.</p>
                         </div>
                     )}
                 </div>

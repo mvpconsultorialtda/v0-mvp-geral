@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/layout/header";
+import { NotificationProvider } from "@/context/NotificationProvider"; // Importe o provedor
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,8 +22,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
-          <Header />
-          {children}
+          <NotificationProvider> {/* Adicione o provedor aqui */}
+            <Header />
+            {children}
+          </NotificationProvider>
         </Providers>
       </body>
     </html>
