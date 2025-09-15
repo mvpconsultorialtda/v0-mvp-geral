@@ -6,12 +6,15 @@
     },
     "ui": {
       "enabled": true,
-      "port": 0
+      "port": 4000
     },
     "singleProjectMode": true
   },
   "dataconnect": {
     "source": "dataconnect"
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   },
   "storage": {
     "rules": "storage.rules"
