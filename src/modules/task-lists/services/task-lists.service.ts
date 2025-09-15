@@ -1,75 +1,90 @@
-import { Task, TaskList, TaskStatus } from '../types';
 
-const API_BASE_URL = '/api';
+import { addDoc, collection, getDocs, query, where, serverTimestamp, getFirestore } from 'firebase/firestore';
+import { auth, firestore } from '../../../lib/firebase-client'; // Usando o SDK do cliente
+import { TaskList } from '../types';
 
-// Funções para a API de Listas
+// 1. Função para criar a lista diretamente no Firestore
+export const createList = async (listData: Omit<Partial<TaskList>, 'id' | 'ownerId' | 'createdAt'>): Promise<TaskList> => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Usuário não autenticado.');
+  }
 
+  const { name, description = '', sharedWith = [] } = listData;
+
+  if (!name) {
+    throw new Error('O nome da lista é obrigatório.');
+  }
+
+  const listsCollection = collection(firestore, 'lists');
+
+  const newListDoc = await addDoc(listsCollection, {
+    name,
+    description,
+    ownerId: user.uid,
+    sharedWith,
+    createdAt: serverTimestamp(),
+  });
+
+  return {
+    id: newListDoc.id,
+    name,
+    description,
+    ownerId: user.uid,
+    sharedWith,
+    createdAt: new Date(), // Retorna a data atual para a UI
+  };
+};
+
+// 2. Função para buscar as listas do Firestore
 export const getLists = async (): Promise<TaskList[]> => {
-  const response = await fetch(`${API_BASE_URL}/lists`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch lists');
+  const user = auth.currentUser;
+  if (!user) {
+    return []; // Retorna um array vazio se não houver usuário
   }
-  return response.json();
-};
 
-export const createList = async (name: string): Promise<TaskList> => {
-  const response = await fetch(`${API_BASE_URL}/lists`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ name }),
+  const listsCollection = collection(firestore, 'lists');
+
+  // Consulta para buscar listas onde o usuário é o dono OU está no array sharedWith
+  const listsQuery = query(
+    listsCollection,
+    where('ownerId', '==', user.uid)
+    // O Firestore não suporta consultas com `OR` em campos diferentes (ownerId, sharedWith) nativamente.
+    // A abordagem correta é fazer duas queries e unir os resultados no cliente.
+  );
+
+  const sharedListsQuery = query(
+    listsCollection,
+    where('sharedWith', 'array-contains', user.uid)
+  );
+
+  const [ownerListsSnapshot, sharedListsSnapshot] = await Promise.all([
+    getDocs(listsQuery),
+    getDocs(sharedListsQuery),
+  ]);
+
+  const listsMap = new Map<string, TaskList>();
+
+  ownerListsSnapshot.forEach((doc) => {
+    const data = doc.data();
+    listsMap.set(doc.id, {
+      id: doc.id,
+      ...data,
+      // Converte o Timestamp do Firestore para um objeto Date
+      createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+    } as TaskList);
   });
-  if (!response.ok) {
-    throw new Error('Failed to create list');
-  }
-  return response.json();
-};
 
-// Funções para a API de Tarefas
-
-export const getTasks = async (listId: string): Promise<Task[]> => {
-  const response = await fetch(`${API_BASE_URL}/lists/${listId}/tasks`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch tasks');
-  }
-  return response.json();
-};
-
-export const createTask = async (listId: string, text: string, order: number): Promise<Task> => {
-  const response = await fetch(`${API_BASE_URL}/lists/${listId}/tasks`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ text, order }),
+  sharedListsSnapshot.forEach((doc) => {
+    const data = doc.data();
+    if (!listsMap.has(doc.id)) { // Evita duplicatas
+      listsMap.set(doc.id, {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+      } as TaskList);
+    }
   });
-  if (!response.ok) {
-    throw new Error('Failed to create task');
-  }
-  return response.json();
-};
 
-// A função updateTask agora aceita `status` no objeto de atualizações.
-export const updateTask = async (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'status' | 'order'>>): Promise<Task> => {
-  const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(updates),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to update task');
-  }
-  return response.json();
-};
-
-export const deleteTask = async (taskId: string): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
-    method: 'DELETE',
-  });
-  if (!response.ok) {
-    throw new Error('Failed to delete task');
-  }
+  return Array.from(listsMap.values());
 };

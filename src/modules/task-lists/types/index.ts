@@ -12,5 +12,6 @@ export interface TaskList {
   name: string;
   ownerId: string;
   sharedWith: string[];
+  description: string;
   createdAt: Date;
 }
