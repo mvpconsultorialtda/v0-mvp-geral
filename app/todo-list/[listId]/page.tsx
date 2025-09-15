@@ -193,7 +193,7 @@ export default function TodoListPage() {
                 <div className='mt-8'>
                     {filteredTodos.length > 0 ? (
                         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
-                            {filteredTodos.map((todo) => (
+                            {(filteredTodos ?? []).map((todo) => (
                                 <TodoItem
                                     key={todo.id}
                                     todo={todo}
