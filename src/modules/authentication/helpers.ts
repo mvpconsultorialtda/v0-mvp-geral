@@ -37,18 +37,12 @@ export async function createUserWithRole(auth: AdminAuth, email: string, passwor
 }
 
 /**
- * Creates a session cookie for the user and sets it.
+ * Creates a session cookie for the user and returns it.
  */
 export async function createSessionCookie(auth: AdminAuth, idToken: string) {
   const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
   const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
-
-  cookies().set("session", sessionCookie, {
-    maxAge: expiresIn,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-  });
+  return { sessionCookie, expiresIn };
 }
 
 /**

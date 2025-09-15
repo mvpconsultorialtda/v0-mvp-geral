@@ -8,8 +8,21 @@ export async function POST(req: NextRequest) {
 
   try {
     const adminAuth = getAdminAuth();
-    await createSessionCookie(adminAuth, idToken);
-    return NextResponse.json({ status: "success" }, { status: 200 });
+    const { sessionCookie, expiresIn } = await createSessionCookie(
+      adminAuth,
+      idToken
+    );
+
+    const response = NextResponse.json({ status: "success" }, { status: 200 });
+
+    response.cookies.set("session", sessionCookie, {
+      maxAge: expiresIn,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    });
+
+    return response;
   } catch (error: any) {
     console.error("[API Login Error]", error);
     if (error.message.includes("Firebase Admin SDK")) {

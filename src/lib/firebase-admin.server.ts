@@ -1,42 +1,46 @@
 
-import admin from 'firebase-admin';
+import * as admin from 'firebase-admin';
 
-// This function will initialize the admin SDK if it hasn't been initialized already
+// Guarda as instâncias inicializadas para que não precisemos reinicializar.
+let auth: admin.auth.Auth;
+let firestore: admin.firestore.Firestore;
+
+/**
+ * Garante que o SDK do Firebase Admin seja inicializado, mas apenas uma vez.
+ * Este é um padrão Singleton para evitar múltiplas instâncias da aplicação.
+ */
 function ensureFirebaseInitialized() {
-  if (admin.apps.length > 0) {
-    return;
-  }
-
-  try {
-    // Use a single, robust environment variable holding the entire JSON content.
-    // This avoids all issues with private key formatting.
-    const credentialsJson = process.env.FIREBASE_CREDENTIALS_JSON;
-
-    if (!credentialsJson) {
-      throw new Error("Firebase credentials are not set in the FIREBASE_CREDENTIALS_JSON environment variable.");
+  if (!admin.apps.length) {
+    try {
+      // A inicialização agora acontece aqui, de forma controlada.
+      admin.initializeApp();
+    } catch (error: any) {
+      console.error("Firebase admin initialization error", error);
+      throw new Error(`Could not initialize Firebase Admin SDK: ${error.message}`);
     }
-
-    const serviceAccount = JSON.parse(credentialsJson);
-    
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-
-  } catch (error: any) {
-    console.error("Firebase admin initialization error", error);
-    // Pass the original error message for better debugging.
-    throw new Error(`Could not initialize Firebase Admin SDK: ${error.message}`);
   }
 }
 
-// A getter function for the auth service
-export function getAdminAuth() {
-  ensureFirebaseInitialized();
-  return admin.auth();
+/**
+ * Retorna a instância de autenticação do Firebase Admin, inicializando se necessário.
+ * @returns {admin.auth.Auth} A instância de autenticação do Admin SDK.
+ */
+export function getAdminAuth(): admin.auth.Auth {
+  if (!auth) {
+    ensureFirebaseInitialized();
+    auth = admin.auth();
+  }
+  return auth;
 }
 
-// A getter function for Firestore
-export function getFirestore() {
-  ensureFirebaseInitialized();
-  return admin.firestore();
+/**
+ * Retorna a instância do Firestore do Firebase Admin, inicializando se necessário.
+ * @returns {admin.firestore.Firestore} A instância do Firestore do Admin SDK.
+ */
+export function getFirestore(): admin.firestore.Firestore {
+  if (!firestore) {
+    ensureFirebaseInitialized();
+    firestore = admin.firestore();
+  }
+  return firestore;
 }
