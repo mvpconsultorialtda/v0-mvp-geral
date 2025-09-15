@@ -5,28 +5,28 @@ import Link from "next/link";
 // Página principal que atua como um hub de módulos
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold mb-4">Aplicação React Modular</h1>
-          <p className="text-gray-600 text-lg">Uma aplicação modular com componentes e páginas reutilizáveis</p>
+    <div className="min-h-screen bg-white p-8">
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-12 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-black mb-4">Hub de Módulos</h1>
+          <p className="text-lg text-gray-500">Selecione um módulo abaixo para começar.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Card para Lista de Tarefas */}
-          <div className="border rounded-lg p-6 bg-white shadow-md">
-            <h2 className="text-xl font-semibold mb-2">Lista de Tarefas</h2>
-            <p className="text-gray-500 mb-4">Organize suas tarefas com categorias, prioridades e filtros</p>
-            <Link href="/tasks" className="block w-full text-center bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-              Abrir Lista de Tarefas
+          <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm hover:shadow-md transition-shadow">
+            <h2 className="text-2xl font-semibold text-black mb-3">Lista de Tarefas</h2>
+            <p className="text-gray-500 mb-6">Organize suas tarefas com categorias, prioridades e filtros.</p>
+            <Link href="/tasks" className="block w-full text-center bg-black hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+              Abrir Módulo
             </Link>
           </div>
 
           {/* Card "Em Breve" */}
-          <div className="border rounded-lg p-6 bg-white shadow-md opacity-50">
-            <h2 className="text-xl font-semibold mb-2">Em Breve</h2>
-            <p className="text-gray-500 mb-4">Mais módulos serão adicionados aqui</p>
-            <button disabled className="w-full bg-gray-300 text-gray-500 font-bold py-2 px-4 rounded cursor-not-allowed">
+          <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm opacity-60">
+            <h2 className="text-2xl font-semibold text-black mb-3">Em Breve</h2>
+            <p className="text-gray-500 mb-6">Mais módulos e funcionalidades serão adicionados aqui.</p>
+            <button disabled className="w-full bg-gray-200 text-gray-400 font-semibold py-3 px-4 rounded-lg cursor-not-allowed">
               Em Breve
             </button>
           </div>
