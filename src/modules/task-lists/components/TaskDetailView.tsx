@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Task, TaskList, TaskStatus } from '../../types';
-import { TasksList } from './TasksList'; // Importando o novo componente de lista
-import KanbanBoardView from '../../../components/KanbanBoardView'; // Caminho corrigido
+import { TasksList } from './TasksList';
+import KanbanBoardView from '../../../components/KanbanBoardView';
 
 interface TaskDetailViewProps {
   activeList: TaskList | null;
@@ -49,7 +49,8 @@ export const TaskDetailView = ({ activeList, tasks, onAddTask, onUpdateTask, onD
         {viewMode === 'list' ? (
           <TasksList tasks={tasks} onUpdateTask={onUpdateTask} onDeleteTask={onDeleteTask} />
         ) : (
-          <KanbanBoardView tasks={tasks} />
+          // A função onUpdateTask agora é passada para o quadro Kanban.
+          <KanbanBoardView tasks={tasks} onUpdateTask={onUpdateTask} />
         )}
       </div>
       
