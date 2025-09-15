@@ -1,59 +1,49 @@
 'use client';
 
-import React from 'react';
-import { Task, TaskStatus } from '../modules/task-lists/types';
-import KanbanColumn from './KanbanColumn';
-import { DragDropContext, DropResult } from '@hello-pangea/dnd';
+import { useMemo } from 'react';
+import { Task, TaskStatus } from '../../modules/types';
+import { KanbanColumn } from './KanbanColumn';
 
 interface KanbanBoardViewProps {
-  tasks: Task[];
-  // A função para atualizar a tarefa é essencial para o drag-and-drop.
-  onUpdateTask: (taskId: string, updates: Partial<Pick<Task, 'status'>>) => void;
+  tasks: Task[] | undefined; // A propriedade pode ser indefinida durante o carregamento
+  onUpdateTask: (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'status'>>) => void;
 }
 
-// O quadro Kanban agora gerencia o contexto de arrastar e soltar.
-const KanbanBoardView: React.FC<KanbanBoardViewProps> = ({ tasks, onUpdateTask }) => {
+const KanbanBoardView = ({ tasks, onUpdateTask }: KanbanBoardViewProps) => {
+  // Define as colunas do quadro Kanban
+  const columns: TaskStatus[] = ['Pendente', 'Em Andamento', 'Concluído'];
 
-  // Esta função é chamada quando uma tarefa é solta.
-  const onDragEnd = (result: DropResult) => {
-    const { destination, source, draggableId } = result;
-
-    // Se não houver destino (solto fora de uma coluna), não faz nada.
-    if (!destination) {
-      return;
+  // O useMemo agora verifica se as tarefas existem antes de processá-las
+  const tasksByStatus = useMemo(() => {
+    if (!tasks) { // Se as tarefas não foram carregadas, retorna um objeto vazio
+      return {};
     }
+    // Agrupa as tarefas por status
+    return tasks.reduce((acc, task) => {
+      if (!acc[task.status]) {
+        acc[task.status] = [];
+      }
+      acc[task.status].push(task);
+      return acc;
+    }, {} as Record<TaskStatus, Task[]>);
+  }, [tasks]);
 
-    // Se a tarefa for solta na mesma posição em que começou, não faz nada.
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    ) {
-      return;
-    }
-
-    // O ID da coluna de destino é o novo status da tarefa.
-    const newStatus = destination.droppableId as TaskStatus;
-
-    // Chama a função de atualização para persistir a mudança de status.
-    onUpdateTask(draggableId, { status: newStatus });
-  };
-
-  // Filtra e agrupa as tarefas por status.
-  const columns: Record<TaskStatus, Task[]> = {
-    'A Fazer': tasks.filter(t => t.status === 'A Fazer'),
-    'Em Andamento': tasks.filter(t => t.status === 'Em Andamento'),
-    'Concluído': tasks.filter(t => t.status === 'Concluído'),
-  };
+  // Se as tarefas ainda não foram carregadas, exibe uma mensagem
+  if (!tasks) {
+    return <div className="text-center p-8">Carregando tarefas...</div>;
+  }
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex space-x-6 overflow-x-auto p-4 h-full">
-        {(Object.keys(columns) as TaskStatus[]).map(status => (
-          // Passa as tarefas filtradas para cada coluna.
-          <KanbanColumn key={status} title={status} tasks={columns[status]} />
-        ))}
-      </div>
-    </DragDropContext>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {columns.map(status => (
+        <KanbanColumn
+          key={status}
+          status={status}
+          tasks={tasksByStatus[status] || []} // Garante que um array seja sempre passado
+          onUpdateTask={onUpdateTask}
+        />
+      ))}
+    </div>
   );
 };
 

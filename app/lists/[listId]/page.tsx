@@ -9,17 +9,17 @@ import { TaskDetailView } from '../../../src/modules/task-lists/components/TaskD
 export default function ListDetailPage({ params }: { params: { listId: string } }) {
   const { listId } = params;
 
-  // Embora esta página seja para uma lista, ainda usamos o hook geral para encontrar a lista pelo ID.
-  // Uma otimização futura seria um hook para buscar uma única lista.
   const { lists, isLoading: isLoadingLists } = useTaskLists();
-  const activeList = useMemo(() => lists.find(l => l.id === listId), [lists, listId]);
+  
+  // CORREÇÃO: Adicionado optional chaining (?.) para evitar erro quando a lista está carregando
+  const activeList = useMemo(() => lists?.find(l => l.id === listId), [lists, listId]);
 
   const { tasks, isLoading: isLoadingTasks, addTask, updateTask, deleteTask } = useTasks(listId);
 
-  if (isLoadingLists || isLoadingTasks) {
+  if (isLoadingLists) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p className="text-lg text-gray-500">Carregando tarefas...</p>
+        <p className="text-lg text-gray-500">Carregando lista...</p>
       </div>
     );
   }
@@ -34,13 +34,21 @@ export default function ListDetailPage({ params }: { params: { listId: string } 
       </div>
     );
   }
+  
+  // Mostra um carregamento específico para as tarefas após a lista ter sido encontrada
+  if (isLoadingTasks) {
+      return (
+        <div className="flex h-screen items-center justify-center">
+            <p className="text-lg text-gray-500">Carregando tarefas...</p>
+        </div>
+      )
+  }
 
   return (
     <main className="h-screen bg-white">
-      {/* A TaskDetailView agora ocupa toda a página, focada em uma única lista */}
       <TaskDetailView
         activeList={activeList}
-        tasks={tasks || []}
+        tasks={tasks || []} // O fallback para array vazio continua sendo uma boa prática
         onAddTask={addTask}
         onUpdateTask={updateTask}
         onDeleteTask={deleteTask}

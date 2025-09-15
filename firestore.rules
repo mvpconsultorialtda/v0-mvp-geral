@@ -1,31 +1,46 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regras para a coleção de listas
-    match /lists/{listId} {
-      function userHasAccess() {
-        return request.auth.uid == resource.data.ownerId || request.auth.uid in resource.data.sharedWith;
-      }
 
-      allow read, update: if userHasAccess();
-      allow create: if request.auth.uid == request.resource.data.ownerId;
-      allow delete: if request.auth.uid == resource.data.ownerId;
+    function isUserAuthenticated() {
+      return request.auth != null;
     }
 
-    // Regras para a coleção de tarefas
-    match /tasks/{taskId} {
-      function userHasAccessToList() {
-        let list = get(/databases/$(database)/documents/lists/$(request.resource.data.listId)).data;
-        return request.auth.uid == list.ownerId || request.auth.uid in list.sharedWith;
+    // Regras para a coleção 'lists'
+    match /lists/{listId} {
+      function canAccessList() {
+        // Verifica se o usuário é o proprietário ou se a lista foi compartilhada com ele
+        let list = get(/databases/$(database)/documents/lists/$(listId));
+        return isUserAuthenticated() && (request.auth.uid == list.data.ownerId || request.auth.uid in list.data.sharedWith);
       }
 
-       function userHadAccessToList() {
-        let list = get(/databases/$(database)/documents/lists/$(resource.data.listId)).data;
-        return request.auth.uid == list.ownerId || request.auth.uid in list.sharedWith;
+      function isListOwner() {
+        let list = get(/databases/$(database)/documents/lists/$(listId));
+        return isUserAuthenticated() && request.auth.uid == list.data.ownerId;
       }
 
-      allow read, update, delete: if userHadAccessToList();
-      allow create: if userHasAccessToList();
+      // Leitura/Atualização: o usuário deve ser o proprietário ou a lista deve ser compartilhada com ele.
+      allow read, update: if canAccessList();
+
+      // Criação: o usuário deve estar autenticado e o ownerId no novo documento deve ser o seu próprio UID.
+      allow create: if isUserAuthenticated() && request.auth.uid == request.resource.data.ownerId;
+
+      // Exclusão: apenas o proprietário pode excluir.
+      allow delete: if isListOwner();
+
+      // Regras para a subcoleção 'tasks'
+      match /tasks/{taskId} {
+        // Qualquer pessoa com acesso à lista pode ler, criar, atualizar e excluir tarefas.
+        allow read, write: if canAccessList();
+      }
+    }
+
+    // Regras para a coleção 'users'
+    match /users/{userId} {
+        // Qualquer usuário autenticado pode ler a lista de usuários (para fins de compartilhamento).
+        allow read: if isUserAuthenticated();
+        // Um usuário só pode criar, atualizar ou excluir seu próprio documento de usuário.
+        allow write: if isUserAuthenticated() && request.auth.uid == userId;
     }
   }
 }
