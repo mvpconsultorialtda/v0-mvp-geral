@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useTaskLists } from '../../../src/modules/task-lists/hooks/useTaskLists';
+import { useLists } from '../../../src/modules/task-lists/hooks/useLists';
 import { useTasks } from '../../../src/modules/task-lists/hooks/useTasks';
 import { TaskDetailView } from '../../../src/modules/task-lists/components/TaskDetailView';
 
@@ -9,39 +9,21 @@ import { TaskDetailView } from '../../../src/modules/task-lists/components/TaskD
 export default function ListDetailPage({ params }: { params: { listId: string } }) {
   const { listId } = params;
 
-  const { lists, isLoading: isLoadingLists } = useTaskLists();
+  const { lists } = useLists();
   
-  // CORREÇÃO: Adicionado optional chaining (?.) para evitar erro quando a lista está carregando
   const activeList = useMemo(() => lists?.find(l => l.id === listId), [lists, listId]);
 
-  const { tasks, isLoading: isLoadingTasks, addTask, updateTask, deleteTask } = useTasks(listId);
-
-  if (isLoadingLists) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="text-lg text-gray-500">Carregando lista...</p>
-      </div>
-    );
-  }
+  const { tasks, createTask, updateTask, deleteTask } = useTasks(listId);
 
   if (!activeList) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-            <h2 className="text-2xl font-semibold text-gray-700">Lista não encontrada</h2>
-            <p className="text-gray-500 mt-2">A lista que você está procurando não existe ou foi removida.</p>
+            <h2 className="text-2xl font-semibold text-gray-700">Carregando lista...</h2>
+            <p className="text-gray-500 mt-2">Ou a lista que você está procurando não existe ou foi removida.</p>
         </div>
       </div>
     );
-  }
-  
-  // Mostra um carregamento específico para as tarefas após a lista ter sido encontrada
-  if (isLoadingTasks) {
-      return (
-        <div className="flex h-screen items-center justify-center">
-            <p className="text-lg text-gray-500">Carregando tarefas...</p>
-        </div>
-      )
   }
 
   return (
@@ -49,7 +31,7 @@ export default function ListDetailPage({ params }: { params: { listId: string } 
       <TaskDetailView
         activeList={activeList}
         tasks={tasks || []} // O fallback para array vazio continua sendo uma boa prática
-        onAddTask={addTask}
+        onAddTask={createTask} // Corrigido para usar a nova função do hook
         onUpdateTask={updateTask}
         onDeleteTask={deleteTask}
       />

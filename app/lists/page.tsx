@@ -1,23 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { useTaskLists } from '../../src/modules/task-lists/hooks/useTaskLists';
+import { useLists } from '../../src/modules/task-lists/hooks/useLists'; // Alterado
 import { TaskListsSidebar } from '../../src/modules/task-lists/components/TaskListsSidebar';
 import { TasksList } from '../../src/modules/task-lists/components/TasksList';
 import { TaskList } from '../../src/modules/task-lists/types';
 
 export default function ListsPage() {
-  const { lists, addList, isLoading } = useTaskLists();
+  const { lists, createList } = useLists(); // Alterado
   const [activeList, setActiveList] = useState<TaskList | null>(null);
 
-  const handleAddList = (listData: Omit<Partial<TaskList>, 'id' | 'ownerId' | 'createdAt'>) => {
-    // Agora 'addList' recebe um objeto com name, description, e sharedWith
-    addList(listData);
+  // A função handleAddList foi renomeada para handleCreateList para melhor clareza
+  const handleCreateList = (listData: Omit<Partial<TaskList>, 'id' | 'ownerId' | 'createdAt'>) => {
+    // A função `createList` agora é chamada diretamente
+    createList(listData);
   };
 
-  if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Carregando...</div>;
-  }
+  // O estado de isLoading foi removido pois o `useLists` agora é em tempo real
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -25,7 +24,7 @@ export default function ListsPage() {
         lists={lists}
         activeList={activeList}
         onSelectList={setActiveList}
-        onAddList={handleAddList} // Passando a nova função
+        onAddList={handleCreateList} // Alterado
       />
       <main className="flex-1 p-8 overflow-y-auto">
         {activeList ? (
