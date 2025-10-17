@@ -7,69 +7,65 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function canAccessList(listId) {
-      // Verifica se o usuário é o proprietário ou se a lista foi compartilhada com ele.
-      // Usamos get() porque esta função pode ser chamada em regras de tarefas onde 'resource' se refere à tarefa.
-      let list = get(/databases/$(database)/documents/lists/$(listId));
-      return isUserAuthenticated() && (request.auth.uid == list.data.ownerId || request.auth.uid in list.data.sharedWith);
+    // New function to check role-based membership
+    function getRole(listId) {
+      return get(/databases/$(database)/documents/lists/$(listId)).data.members[request.auth.uid];
     }
 
-    function isListOwner(listId) {
-      // Verifica se o usuário é o proprietário da lista.
+    function isOwner(listId) {
       let list = get(/databases/$(database)/documents/lists/$(listId));
       return isUserAuthenticated() && request.auth.uid == list.data.ownerId;
     }
 
     match /lists/{listId} {
-      // Leitura permitida para proprietário e membros compartilhados.
-      // 'resource' refere-se ao documento 'list' que está sendo lido.
-      allow read: if isUserAuthenticated() && (request.auth.uid == resource.data.ownerId || request.auth.uid in resource.data.sharedWith);
+      // Read allowed for owner and members (editors and viewers)
+      allow read: if isUserAuthenticated() && (isOwner(listId) || request.auth.uid in resource.data.members);
 
-      // Criação permitida apenas para o usuário que será o proprietário.
-      // 'request.resource' refere-se ao documento que está sendo criado.
+      // Create allowed only for the user who will be the owner
       allow create: if isUserAuthenticated() &&
                       request.auth.uid == request.resource.data.ownerId &&
                       'name' in request.resource.data &&
                       request.resource.data.name is string &&
                       request.resource.data.name.size() > 0 &&
-                      request.resource.data.sharedWith is list;
+                      'members' in request.resource.data &&
+                      request.resource.data.members.size() == 0; // Initialize with no members
 
-      // Atualização permitida apenas para o proprietário da lista.
-      // Não permitir a alteração do proprietário.
-      allow update: if isListOwner(listId) &&
-                      request.resource.data.ownerId == resource.data.ownerId;
+      // Update allowed for the owner and editors
+      // Owner can change anything. Editors can change anything except the ownerId.
+      allow update: if isUserAuthenticated() && (
+                      (isOwner(listId)) ||
+                      (getRole(listId) == 'editor' && request.resource.data.ownerId == resource.data.ownerId)
+                    );
 
-      // Exclusão permitida apenas para o proprietário.
-      allow delete: if isListOwner(listId);
+      // Delete allowed only for the owner
+      allow delete: if isOwner(listId);
 
-      // Regras para a subcoleção 'tasks' aninhada em 'lists'
       match /tasks/{taskId} {
-        // Leitura de tarefas permitida para todos que têm acesso à lista.
-        allow read: if canAccessList(listId);
-        
-        // Criação de tarefas com validação de dados.
-        allow create: if canAccessList(listId) &&
+        // Read tasks allowed for owner and members
+        allow read: if isUserAuthenticated() && (isOwner(listId) || getRole(listId) in ['editor', 'viewer']);
+
+        // Create tasks allowed for owner and editors
+        allow create: if isUserAuthenticated() && (isOwner(listId) || getRole(listId) == 'editor') &&
                          'text' in request.resource.data &&
                          request.resource.data.text is string &&
                          request.resource.data.text.size() > 0 &&
                          'completed' in request.resource.data &&
                          request.resource.data.completed == false;
 
-        // Atualização de tarefas permitida para quem tem acesso à lista, com validações.
-        allow update: if canAccessList(listId) &&
+        // Update tasks allowed for owner and editors
+        allow update: if isUserAuthenticated() && (isOwner(listId) || getRole(listId) == 'editor') &&
                          ('text' in request.resource.data || 'completed' in request.resource.data);
-        
-        // Exclusão de tarefas permitida para quem tem acesso à lista.
-        allow delete: if canAccessList(listId);
+
+        // Delete tasks allowed for owner and editors
+        allow delete: if isUserAuthenticated() && (isOwner(listId) || getRole(listId) == 'editor');
       }
     }
 
-    // Regras para a coleção de usuários
     match /users/{userId} {
-      // Qualquer usuário autenticado pode ler perfis para funcionalidades de compartilhamento.
+      // Any authenticated user can read profiles for sharing features.
       allow read: if isUserAuthenticated();
-      
-      // Um usuário só pode modificar seu próprio perfil.
+
+      // A user can only modify their own profile.
       allow write: if isUserAuthenticated() && request.auth.uid == userId;
     }
   }
