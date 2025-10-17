@@ -25,5 +25,9 @@
   "extensions": {},
   "database": {
     "rules": "database.rules.json"
+  },
+  "functions": {
+    "source": "src/functions",
+    "runtime": "nodejs18"
   }
 }

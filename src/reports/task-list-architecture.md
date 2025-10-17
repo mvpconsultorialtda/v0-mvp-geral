@@ -10,6 +10,7 @@ Os princípios norteadores desta arquitetura são:
 *   **Separação de Preocupações (Separation of Concerns)**: A lógica de apresentação (componentes React), gerenciamento de estado do cliente e a lógica de acesso a dados (serviços) são claramente compartimentalizadas. Isso promove a manutenibilidade, testabilidade e escalabilidade do código.
 *   **Escalabilidade**: A estrutura de dados e a lógica de consulta são projetadas para suportar um grande número de usuários, listas e tarefas, aproveitando o modelo de dados NoSQL escalável do Firestore.
 *   **Segurança**: O acesso aos dados é rigorosamente controlado por meio de regras de segurança do lado do servidor, garantindo que os usuários só possam acessar e modificar os dados aos quais têm permissão.
+*   **Funcionalidades Abrangentes**: A arquitetura deve suportar um conjunto rico de funcionalidades, incluindo gerenciamento de permissões, informações detalhadas de tarefas e trilhas de auditoria.
 
 ## 2. Arquitetura de Frontend (Next.js e React)
 
@@ -17,74 +18,121 @@ O frontend é construído como uma Single-Page Application (SPA) utilizando Reac
 
 ### 2.1. Gerenciamento de Estado com Hooks e Context
 
-Para evitar o "prop drilling" (passagem excessiva de propriedades através de múltiplos níveis de componentes) e para gerenciar de forma centralizada o estado das listas e tarefas, a arquitetura utiliza uma combinação de React Context e hooks customizados.
+Para evitar o "prop drilling" e para gerenciar de forma centralizada o estado, a arquitetura utiliza uma combinação de React Context e hooks customizados.
 
 *   **`useLists` Hook**:
     *   Responsável por buscar e gerenciar o estado das listas de tarefas do usuário.
-    *   Internamente, este hook chama o serviço `task-lists.service.ts` para estabelecer uma conexão em tempo real com o Firestore.
-    *   Ele fornece um array de listas (`TaskList[]`) e funções para criar, atualizar ou excluir listas.
-    *   Exemplo de uso: `const { lists, createList } = useLists();`
+    *   Fornece um array de listas (`TaskList[]`) e funções para criar, atualizar ou excluir listas.
+    *   Exemplo: `const { lists, createList } = useLists();`
 
 *   **`useTasks(listId)` Hook**:
-    *   Responsável por gerenciar as tarefas de uma lista específica, identificada por `listId`.
-    *   Este hook encapsula toda a lógica relacionada às tarefas: busca em tempo real, criação, atualização de status, reordenação e exclusão.
-    *   O `listId` é um parâmetro obrigatório, garantindo que todas as operações de backend recebam o identificador de contexto necessário.
-    *   Exemplo de uso: `const { tasks, createTask, updateTask } = useTasks(currentListId);`
+    *   Responsável por gerenciar as tarefas de uma lista específica.
+    *   Encapsula a lógica de busca em tempo real, criação, atualização, reordenação e exclusão de tarefas.
+    *   Exemplo: `const { tasks, createTask, updateTask } = useTasks(currentListId);`
+
+*   **`usePermissions(listId)` Hook (Novo)**:
+    *   Gerencia os usuários e suas respectivas permissões para uma lista específica.
+    *   Fornece funções para adicionar, remover e atualizar as permissões dos usuários.
+    *   Exemplo: `const { members, addUser, removeUser } = usePermissions(currentListId);`
 
 ### 2.2. Estrutura de Componentes
 
-*   **`TaskListsSidebar`**: Exibe a lista de todas as listas de tarefas disponíveis para o usuário, utilizando o hook `useLists` para obter os dados. Permite a seleção de uma lista ativa.
-*   **`KanbanBoardView` / `TasksListView`**: O componente principal que exibe as tarefas da lista selecionada. Ele utiliza o hook `useTasks(selectedListId)` para obter e exibir as tarefas.
-*   **`TaskItem`**: Um componente que representa uma única tarefa. Ele recebe a tarefa e as funções de callback (`onUpdate`, `onDelete`) do seu componente pai (`TasksListView`).
-*   **`ListEditModal` e `TaskDetailView`**: Componentes modais ou de sobreposição para editar os detalhes de uma lista ou de uma tarefa, respectivamente. Eles recebem os dados necessários como props e utilizam as funções dos hooks para persistir as alterações.
+*   **`TaskListsSidebar`**: Exibe as listas de tarefas, permitindo a seleção de uma lista ativa.
+*   **`KanbanBoardView` / `TasksListView`**: Exibe as tarefas da lista selecionada.
+*   **`TaskItem`**: Representa uma única tarefa.
+*   **`TaskDetailView` (Expandido)**: Uma visão detalhada da tarefa, similar a um card do Trello. Permite a edição de:
+    *   Título e Descrição.
+    *   Data de Vencimento.
+    *   Anexos.
+    *   Comentários.
+    *   Visualização do Log de Atividades da tarefa.
+*   **`ListSettingsModal` (Novo)**: Um modal para gerenciar as configurações da lista, incluindo a adição/remoção de membros e a definição de suas permissões.
 
 ## 3. Camada de Serviço e Acesso a Dados
 
-A comunicação com o Firestore é abstraída por uma camada de serviço, localizada em `src/modules/task-lists/services/task-lists.service.ts`. Esta camada desacopla os componentes React dos detalhes de implementação do Firebase SDK.
+A comunicação com o Firestore é abstraída por uma camada de serviço em `src/modules/task-lists/services/task-lists.service.ts`.
 
 ### 3.1. Sincronização em Tempo Real com `onSnapshot`
 
-A principal característica da camada de serviço é o uso do método `onSnapshot` do Firestore para todas as consultas de leitura.
+O método `onSnapshot` do Firestore é usado para todas as consultas de leitura, garantindo que a UI esteja sempre sincronizada em tempo real com o banco de dados.
 
-*   **`getLists(callback)`**: Em vez de retornar uma promessa com um conjunto de dados estático, esta função estabelece um listener na coleção `lists`. Ela invoca uma função de `callback` fornecida com a lista de documentos mais recente sempre que houver uma alteração (adição, modificação, exclusão) nos dados que correspondem à consulta (listas do proprietário ou compartilhadas). O hook `useLists` passa uma função que atualiza seu estado interno como o callback.
+### 3.2. Operações de Escrita (CRUD e Ações Adicionais)
 
-*   **`getTasks(listId, callback)`**: Da mesma forma, esta função estabelece um listener na subcoleção `tasks` de uma `list` específica. Ela atualiza o cliente em tempo real à medida que as tarefas são adicionadas, marcadas como concluídas, reordenadas, etc. O hook `useTasks` utiliza esta função para se manter sincronizado.
-
-### 3.2. Operações de Escrita (CRUD)
-
-As funções de criação, atualização e exclusão (`createList`, `createTask`, `updateTask`, `deleteTask`) são implementadas como funções assíncronas padrão que retornam promessas. Elas são projetadas para receber todos os identificadores necessários (`listId`, `taskId`) como argumentos, um padrão garantido pelo design dos hooks `useTasks` e `useLists`.
+As funções de escrita são assíncronas e incluem:
+*   Gerenciamento de listas: `createList`, `updateList`, `deleteList`.
+*   Gerenciamento de tarefas: `createTask`, `updateTask`, `deleteTask`.
+*   Gerenciamento de informações da tarefa: `updateTaskDescription`, `addTaskComment`, `addTaskAttachment`.
+*   Gerenciamento de permissões: `addUserToList`, `removeUserFromList`, `updateUserRole`.
 
 ## 4. Arquitetura de Backend (Firebase Firestore)
 
 ### 4.1. Estrutura de Dados NoSQL
 
-A arquitetura de dados no Firestore é projetada para consultas eficientes e escaláveis.
-
-*   **Coleção `lists`**: A coleção raiz para as listas de tarefas.
+*   **Coleção `lists`**:
     *   `{listId}`
-        *   `name`: "Lista de Compras"
+        *   `name`: "Roadmap do Produto"
         *   `ownerId`: "user_abc"
-        *   `sharedWith`: ["user_xyz", "user_123"]
+        *   `members`: { "user_xyz": "editor", "user_123": "viewer" }  **(Estrutura de Permissões)**
         *   `createdAt`: Timestamp
 
-*   **Subcoleção `tasks`**: Aninhada dentro de cada documento de lista. Este modelo permite o carregamento de tarefas específicas de uma lista sem a necessidade de carregar todas as tarefas de todas as listas.
+*   **Subcoleção `tasks`**:
     *   `lists/{listId}/tasks/{taskId}`
-        *   `text`: "Comprar leite"
-        *   `status`: "Pendente"
+        *   `text`: "Implementar autenticação"
+        *   `status`: "Em Progresso"
         *   `order`: 1
-        *   `completed`: false
+        *   `description`: "Descrição detalhada da tarefa..." **(Trello-like)**
+        *   `dueDate`: Timestamp **(Trello-like)**
+        *   `assigneeId`: "user_xyz" **(Novo)**
+        *   `dependsOn`: ["taskId_anterior"] **(Novo)**
+
+*   **Novas Subcoleções (Trello-like)**:
+    *   `lists/{listId}/tasks/{taskId}/comments`: Subcoleção para comentários.
+    *   `lists/{listId}/tasks/{taskId}/attachments`: Subcoleção para anexos.
+    *   `lists/{listId}/activity`: Subcoleção para o log de atividades da lista.
 
 ### 4.2. Regras de Segurança do Firestore
 
-A segurança é imposta no nível do banco de dados através de `firestore.rules`. Estas regras são a espinha dorsal da proteção de dados.
+As regras de segurança são a base da proteção dos dados.
 
 *   **Acesso a Listas**:
-    *   Leitura (`get`, `list`): Permitida se o `request.auth.uid` do usuário for igual ao `ownerId` do documento ou se estiver presente no array `sharedWith`.
-    *   Criação (`create`): Permitida se o `ownerId` do novo documento for igual ao `request.auth.uid` do usuário.
-    *   Atualização (`update`): Permitida apenas para o `ownerId`.
-    *   Exclusão (`delete`): Permitida apenas para o `ownerId`.
+    *   Leitura: Permitida se o `request.auth.uid` for `ownerId` ou uma chave no mapa `members`.
+    *   Criação: Permitida se o `ownerId` do novo documento for o `request.auth.uid`.
+    *   Atualização: Permitida para o `ownerId` ou para `members` com a role "editor".
+    *   Exclusão: Permitida apenas para o `ownerId`.
 
-*   **Acesso a Tarefas**:
-    *   Leitura, Criação, Atualização, Exclusão: Permitido se o usuário tiver permissão de leitura para a lista pai (documento em `/lists/{listId}`). Isso é verificado usando uma chamada `exists()` para o documento da lista pai dentro da regra da tarefa.
+*   **Acesso a Tarefas e Subcoleções**:
+    *   Permitido se o usuário tiver permissão de leitura na lista pai e, para operações de escrita, se tiver a role "editor" ou for o `ownerId` da lista.
 
-Essa estrutura garante que as consultas do lado do cliente não possam contornar as permissões, fornecendo uma arquitetura segura e robusta de ponta a ponta.
+### 4.3. Funcionalidades Adicionais e Ideias (Expandido)
+
+1.  **Exclusão de Listas (Cascading Deletes)**:
+    *   **Descrição Detalhada**: A exclusão de uma lista é uma ação destrutiva que precisa remover não apenas o documento da lista, mas também todos os dados relacionados para evitar dados órfãos e custos desnecessários. Isso inclui todas as tarefas, comentários e anexos associados.
+    *   **Implementação Técnica**: Será criada uma Cloud Function do Firebase (especificamente, uma função acionada pelo `onDelete` de um documento em `lists/{listId}`). Esta função receberá o `listId` da lista excluída e executará um script para apagar recursivamente todas as subcoleções (`tasks`, `activity`) e quaisquer dados associados no Firebase Storage (como anexos de arquivos). A função precisará lidar com a exclusão em lote para ser eficiente e evitar exceder os limites de execução.
+
+2.  **Adicionar Usuários e Listas de Permissões**:
+    *   **Descrição Detalhada**: Para permitir a colaboração, os proprietários de listas precisam de um controle granular sobre quem pode ver e editar suas listas. O sistema de permissões terá três níveis: `owner` (proprietário, com controle total), `editor` (pode editar/adicionar/remover tarefas, mas não excluir a lista ou gerenciar usuários), e `viewer` (apenas visualização).
+    *   **Implementação Técnica**: A interface do usuário terá um modal de "Gerenciar Membros", onde o proprietário pode inserir o e-mail de um usuário. Uma Cloud Function (invocável pelo cliente) será usada para validar o e-mail, encontrar o UID do usuário correspondente no Firebase Authentication e, em seguida, adicionar uma entrada no mapa `members` do documento da lista. As Regras de Segurança do Firestore (`firestore.rules`) serão a principal forma de aplicar essas permissões, lendo o mapa `members` para autorizar ou negar operações de leitura/escrita.
+
+3.  **Informações Detalhadas de Tarefas (Molde Trello)**:
+    *   **Descrição Detalhada**: Para que as tarefas sejam mais do que simples itens de "a fazer", elas precisam de um contexto rico. Cada tarefa se tornará um "card" detalhado. Os usuários poderão abrir uma tarefa para ver uma descrição formatada (com suporte a markdown), definir datas de vencimento, anexar arquivos (imagens, documentos), e ter uma conversa encadeada na forma de comentários.
+    *   **Implementação Técnica**: O modelo de dados da tarefa no Firestore será expandido para incluir campos opcionais como `description` (string), `dueDate` (timestamp), e `attachments` (um array de objetos com `name`, `url`, `type`). Os comentários serão uma subcoleção (`comments`) dentro de cada tarefa para permitir paginação e carregamento eficiente. Os anexos de arquivos serão enviados para o Firebase Storage em um caminho específico (`/attachments/{listId}/{taskId}/{fileName}`), e a URL de download será armazenada no documento da tarefa.
+
+4.  **Log de Atividades**:
+    *   **Descrição Detalhada**: Para manter todos os colaboradores informados e fornecer um histórico de alterações, cada lista terá um log de atividades visível. Este log registrará ações como "Usuário X criou a tarefa Y", "Usuário Z moveu a tarefa W para 'Concluído'", ou "Usuário A adicionou Usuário B à lista".
+    *   **Implementação Técnica**: Uma subcoleção `activity` será criada em cada documento de lista. Cloud Functions (acionadas por `onCreate`, `onUpdate`, `onDelete` nas tarefas e por alterações no mapa `members` da lista) serão usadas para registrar esses eventos de forma assíncrona. Cada documento de atividade conterá o tipo de ação, o autor, a data e os detalhes relevantes. A UI exibirá esses logs em ordem cronológica inversa.
+
+5.  **Notificações**:
+    *   **Descrição Detalhada**: Os usuários devem ser notificados proativamente sobre eventos importantes, mesmo quando não estão com o aplicativo aberto. As notificações podem ser enviadas quando um usuário é adicionado a uma lista, quando uma tarefa lhe é atribuída, ou quando um comentário é feito em uma tarefa que ele segue.
+    *   **Implementação Técnica**: Esta funcionalidade será construída sobre o Firebase Cloud Messaging (FCM). Cloud Functions observarão as alterações relevantes no Firestore (ex: a criação de um comentário). A função determinará quais usuários devem ser notificados, obterá seus tokens de dispositivo FCM (que serão armazenados em uma coleção `users` separada) e enviará a notificação push.
+
+6.  **Busca e Filtros Avançados**:
+    *   **Descrição Detalhada**: Em listas com muitas tarefas, encontrar informações específicas rapidamente é crucial. Os usuários poderão pesquisar tarefas por texto (no título ou descrição) e aplicar filtros para refinar a visualização, como mostrar apenas tarefas atribuídas a um usuário específico, tarefas com uma determinada data de vencimento ou tarefas em um determinado status.
+    *   **Implementação Técnica**: Para busca de texto completo (full-text), a integração com um serviço de terceiros como Algolia ou Typesense é a abordagem mais robusta. Uma Cloud Function sincronizará os dados das tarefas com o índice de busca. Para filtros simples (por `assigneeId`, `status`), consultas compostas do Firestore podem ser usadas diretamente, o que pode exigir a criação de índices compostos no console do Firebase.
+
+7.  **Dependências entre Tarefas**:
+    *   **Descrição Detalhada**: Para projetos mais complexos, as tarefas muitas vezes dependem da conclusão de outras. A UI visualizará essas dependências (por exemplo, mostrando um ícone ou uma linha conectando as tarefas) e poderá impor regras, como impedir que uma tarefa seja marcada como "Concluída" se suas tarefas dependentes ainda estiverem pendentes.
+    *   **Implementação Técnica**: Um campo `dependsOn` (um array de `taskId`s) será adicionado ao modelo de dados da tarefa. A lógica para aplicar as regras de dependência residirá principalmente no frontend (desabilitando botões ou mostrando avisos), mas também pode ser reforçada por meio de Cloud Functions se for necessária uma validação mais rigorosa no backend.
+
+8.  **Atribuição de Tarefas**:
+    *   **Descrição Detalhada**: Para delegar trabalho e esclarecer responsabilidades, as tarefas podem ser atribuídas a um ou mais membros da lista. O avatar do membro atribuído será exibido no card da tarefa para uma visualização rápida de quem é o responsável.
+    *   **Implementação Técnica**: Um campo `assigneeId` (ou `assigneeIds` para múltiplos responsáveis) será adicionado ao documento da tarefa. Este campo armazenará o UID do usuário. A UI permitirá a seleção de um membro a partir de uma lista suspensa de todos os usuários que pertencem à lista (lidos do mapa `members`). As Regras de Segurança podem, opcionalmente, dar permissões de edição adicionais ao usuário atribuído para "sua" tarefa.
