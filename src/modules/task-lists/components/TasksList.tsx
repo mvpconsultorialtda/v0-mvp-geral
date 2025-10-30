@@ -31,6 +31,10 @@ export const TasksList = ({ list }: TasksListProps) => {
       setSelectedTask(null);
   };
 
+  const handleUpdateTask = (taskId: string, listId: string, updates: Partial<Task>) => {
+      updateTask(taskId, listId, updates);
+  };
+
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">{list.name}</h2>
@@ -70,9 +74,10 @@ export const TasksList = ({ list }: TasksListProps) => {
       {selectedTask && (
           <TaskDetailModal 
             task={selectedTask} 
+            listId={list.id} // Passa o listId para o modal
             isOpen={!!selectedTask} 
             onClose={handleCloseModal} 
-            onUpdateTask={updateTask} 
+            onUpdateTask={handleUpdateTask} 
           />
       )}
     </div>

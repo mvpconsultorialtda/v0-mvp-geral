@@ -27,7 +27,7 @@ interface TaskDetailModalProps {
     listId: string;
     isOpen: boolean;
     onClose: () => void;
-    onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
+    onUpdateTask: (taskId: string, listId: string, updates: Partial<Task>) => void;
 }
 
 export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }: TaskDetailModalProps) {
@@ -49,7 +49,7 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
         if (data.dueDate) {
             updates.dueDate = new Date(data.dueDate);
         }
-        onUpdateTask(task.id, updates);
+        onUpdateTask(task.id, listId, updates);
         onClose();
     };
 

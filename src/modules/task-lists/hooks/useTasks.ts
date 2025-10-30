@@ -25,7 +25,7 @@ export const useTasks = (listId: string) => {
     return createTask(listId, text, order);
   };
 
-  const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
+  const handleUpdateTask = (taskId: string, listId: string, updates: Partial<Task>) => {
     return updateTask(taskId, listId, updates);
   };
 

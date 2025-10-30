@@ -9,7 +9,7 @@ interface TaskDetailViewProps {
   activeList: TaskList | null;
   tasks: Task[];
   onAddTask: (text: string) => void;
-  onUpdateTask: (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'status'>>) => void;
+  onUpdateTask: (taskId: string, listId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'status'>>) => void;
   onDeleteTask: (taskId: string) => void;
 }
 
