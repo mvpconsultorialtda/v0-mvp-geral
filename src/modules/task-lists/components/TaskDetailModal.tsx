@@ -1,4 +1,4 @@
-
+'''
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -9,15 +9,16 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Task } from '../types';
 import { CommentsList } from './CommentsList';
-import { CommentForm } from './CommentForm';
 import { useComments } from '../hooks/useComments';
 import { AttachmentList } from './AttachmentList';
 import { AttachmentForm } from './AttachmentForm';
 import { useAttachments } from '../hooks/useAttachments';
 
+// Add newComment to the schema
 const taskDetailSchema = z.object({
     description: z.string().optional(),
-    dueDate: z.string().optional(), // Changed to string to accept input value
+    dueDate: z.string().optional(),
+    newComment: z.string().optional(),
 });
 
 type TaskDetailForm = z.infer<typeof taskDetailSchema>;
@@ -31,11 +32,12 @@ interface TaskDetailModalProps {
 }
 
 export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }: TaskDetailModalProps) {
-    const { register, handleSubmit, formState: { errors } } = useForm<TaskDetailForm>({
+    const { register, handleSubmit, reset, formState: { errors } } = useForm<TaskDetailForm>({
         resolver: zodResolver(taskDetailSchema),
         defaultValues: {
             description: task.description || '',
             dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+            newComment: '',
         }
     });
     const { comments, addComment } = useComments(listId, task.id);
@@ -49,12 +51,22 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
         if (data.dueDate) {
             updates.dueDate = new Date(data.dueDate);
         }
-        onUpdateTask(task.id, updates);
-        onClose();
-    };
+        
+        // Update task details if there are any changes
+        if (Object.keys(updates).length > 0) {
+            onUpdateTask(task.id, updates);
+        }
 
-    const handleAddComment = (commentData: { text: string }) => {
-        addComment(commentData.text);
+        // Add a new comment if text is provided
+        if (data.newComment && data.newComment.trim() !== '') {
+            addComment(data.newComment.trim());
+        }
+
+        // Do not close the modal, just reset the form fields for new comments
+        reset({
+            ...data, // keep description and dueDate
+            newComment: '' // clear the new comment field
+        });
     };
 
     const handleUploadAttachment = (attachmentData: { file: FileList }) => {
@@ -63,8 +75,14 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
         }
     };
 
+    // Close modal and reset everything
+    const handleClose = () => {
+        reset(); // Reset form on close
+        onClose();
+    };
+
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                     <DialogTitle>{task.text}</DialogTitle>
@@ -72,28 +90,39 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
                         View and edit the details of your task.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                        <div>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
                             <Label htmlFor="description">Description</Label>
                             <Textarea id="description" {...register('description')} />
                         </div>
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="dueDate">Due Date</Label>
                             <Input id="dueDate" type="date" {...register('dueDate')} />
                         </div>
-                        <Button type="submit">Save</Button>
-                    </form>
-                    <div className="space-y-4">
-                        <CommentsList comments={comments} />
-                        <CommentForm onSubmit={handleAddComment} />
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold">Comments</h3>
+                            <CommentsList comments={comments} />
+                            <div className="space-y-2">
+                                <Label htmlFor="newComment">Add Comment</Label>
+                                <Textarea id="newComment" {...register('newComment')} placeholder="Add a new comment..." />
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-semibold">Attachments</h3>
+                            <AttachmentList attachments={attachments} />
+                            <AttachmentForm onSubmit={handleUploadAttachment} />
+                        </div>
                     </div>
-                    <div className="space-y-4">
-                        <AttachmentList attachments={attachments} />
-                        <AttachmentForm onSubmit={handleUploadAttachment} />
+                    
+                    <div className="flex justify-end">
+                        <Button type="submit">Save Changes</Button>
                     </div>
-                </div>
+                </form>
             </DialogContent>
         </Dialog>
     );
 }
+'''
