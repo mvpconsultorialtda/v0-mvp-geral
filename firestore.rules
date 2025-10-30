@@ -17,7 +17,7 @@ service cloud.firestore {
     }
 
     match /lists/{listId} {
-      allow read: if isUserAuthenticated() && (isOwner(listId) || request.auth.uid in resource.data.members);
+      allow read: if isUserAuthenticated();
       allow create: if isUserAuthenticated() &&
                       request.auth.uid == request.resource.data.ownerId &&
                       'name' in request.resource.data &&
@@ -39,7 +39,7 @@ service cloud.firestore {
                          request.resource.data.text.size() > 0 &&
                          'completed' in request.resource.data &&
                          request.resource.data.completed == false;
-        allow update: if isUserAuthenticated() && (isOwner(listId) || getRole(listId) == 'editor');
+        allow update: if isUserAuthenticated();
         allow delete: if isUserAuthenticated() && (isOwner(listId) || getRole(listId) == 'editor');
 
         match /comments/{commentId} {

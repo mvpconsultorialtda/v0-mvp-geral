@@ -107,7 +107,7 @@ export const updateTask = async (listId: string, taskId: string, updates: Partia
     const taskDocRef = doc(firestore, 'lists', listId, 'tasks', taskId);
     await updateDoc(taskDocRef, updates);
     // O retorno pode ser otimizado para não precisar buscar o doc novamente, mas por simplicidade vamos manter assim
-    return { id: taskId, ...updates } as Task; // Retorno simplificado
+    return { id: taskId, listId, text: '', order: 0, completed: false, status: 'Pendente', ...updates, createdAt: new Date() }; // Retorno simplificado
 };
 
 export const deleteTask = async (listId: string, taskId: string): Promise<void> => {
