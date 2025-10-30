@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TaskList } from '../../types';
+import { Task, TaskList } from '../../types';
 import { useTasks } from '../hooks/useTasks';
 import { TaskItem } from './TaskItem';
+import { TaskDetailModal } from './TaskDetailModal';
 
 interface TasksListProps {
   list: TaskList;
@@ -12,6 +13,7 @@ interface TasksListProps {
 export const TasksList = ({ list }: TasksListProps) => {
   const { tasks, createTask, updateTask, deleteTask } = useTasks(list.id);
   const [newTaskText, setNewTaskText] = useState('');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,6 +21,14 @@ export const TasksList = ({ list }: TasksListProps) => {
       createTask(newTaskText.trim());
       setNewTaskText('');
     }
+  };
+
+  const handleSelectTask = (task: Task) => {
+      setSelectedTask(task);
+  };
+
+  const handleCloseModal = () => {
+      setSelectedTask(null);
   };
 
   return (
@@ -51,9 +61,19 @@ export const TasksList = ({ list }: TasksListProps) => {
               task={task} 
               onUpdateTask={(taskId, updates) => updateTask(taskId, updates)} 
               onDeleteTask={deleteTask} 
+              onSelectTask={handleSelectTask} 
             />
           ))}
         </ul>
+      )}
+
+      {selectedTask && (
+          <TaskDetailModal 
+            task={selectedTask} 
+            isOpen={!!selectedTask} 
+            onClose={handleCloseModal} 
+            onUpdateTask={updateTask} 
+          />
       )}
     </div>
   );

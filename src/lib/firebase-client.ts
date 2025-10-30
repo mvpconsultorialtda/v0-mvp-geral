@@ -2,6 +2,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 // A configuração do Firebase agora lê as variáveis de ambiente
@@ -19,6 +20,7 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 // Inicializa o Analytics apenas no navegador e se for suportado
 let analytics;
@@ -30,4 +32,4 @@ if (typeof window !== "undefined") {
   });
 }
 
-export { app, auth, db, analytics };
+export { app, auth, db, storage, analytics };

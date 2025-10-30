@@ -8,6 +8,8 @@ export interface Task {
   completed: boolean;
   order: number;
   createdAt: Date;
+  description?: string;
+  dueDate?: Date;
 }
 
 export interface TaskList {
@@ -17,4 +19,21 @@ export interface TaskList {
   members: Record<string, MemberRole>;
   description: string;
   createdAt: Date;
+}
+
+export interface Comment {
+    id: string;
+    taskId: string;
+    userId: string;
+    text: string;
+    createdAt: Date;
+}
+
+export interface Attachment {
+    id: string;
+    taskId: string;
+    userId: string;
+    url: string;
+    name: string;
+    createdAt: Date;
 }

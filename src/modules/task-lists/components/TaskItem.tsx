@@ -6,16 +6,23 @@ interface TaskItemProps {
   task: Task;
   onUpdateTask: (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'status'>>) => void;
   onDeleteTask: (taskId: string) => void;
+  onSelectTask: (task: Task) => void;
 }
 
-export const TaskItem = ({ task, onUpdateTask, onDeleteTask }: TaskItemProps) => {
+export const TaskItem = ({ task, onUpdateTask, onDeleteTask, onSelectTask }: TaskItemProps) => {
   return (
-    <li className="flex items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm">
+    <li 
+        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm cursor-pointer"
+        onClick={() => onSelectTask(task)}
+    >
       <div className="flex items-center">
         <input
           type="checkbox"
           checked={task.completed}
-          onChange={() => onUpdateTask(task.id, { completed: !task.completed })}
+          onChange={(e) => {
+              e.stopPropagation();
+              onUpdateTask(task.id, { completed: !task.completed });
+          }}
           className="h-5 w-5 rounded border-gray-300 text-black focus:ring-black"
         />
         <span className={`ml-3 text-lg ${task.completed ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
@@ -23,7 +30,10 @@ export const TaskItem = ({ task, onUpdateTask, onDeleteTask }: TaskItemProps) =>
         </span>
       </div>
       <button 
-        onClick={() => onDeleteTask(task.id)}
+        onClick={(e) => {
+            e.stopPropagation();
+            onDeleteTask(task.id)
+        }}
         className="text-gray-400 hover:text-red-500 transition-colors"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
