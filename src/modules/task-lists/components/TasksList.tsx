@@ -31,8 +31,8 @@ export const TasksList = ({ list }: TasksListProps) => {
       setSelectedTask(null);
   };
 
-  const handleUpdateTask = (taskId: string, listId: string, updates: Partial<Task>) => {
-      updateTask(taskId, listId, updates);
+  const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
+      updateTask(taskId, updates);
   };
 
   return (
