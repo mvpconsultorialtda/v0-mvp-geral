@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Task } from '../types';
 import { CommentsList } from './CommentsList';
 import { CommentForm } from './CommentForm';
@@ -68,6 +68,9 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
             <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                     <DialogTitle>{task.text}</DialogTitle>
+                    <DialogDescription>
+                        View and edit the details of your task.
+                    </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
