@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { Task } from '../types';
 import { getTasks, createTask, updateTask, deleteTask } from '../services/task-lists.service';
@@ -19,18 +21,16 @@ export const useTasks = (listId: string) => {
   }, [listId]);
 
   const handleCreateTask = (text: string) => {
-    // A lógica de "ordem" pode ser simples ou complexa.
-    // Aqui, apenas adicionamos ao final.
     const order = tasks.length;
     return createTask(listId, text, order);
   };
 
-  const handleUpdateTask = (taskId: string, listId: string, updates: Partial<Task>) => {
-    return updateTask(taskId, listId, updates);
+  const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
+    return updateTask(listId, taskId, updates);
   };
 
   const handleDeleteTask = (taskId: string) => {
-    return deleteTask(taskId, listId);
+    return deleteTask(listId, taskId);
   };
 
   return {
