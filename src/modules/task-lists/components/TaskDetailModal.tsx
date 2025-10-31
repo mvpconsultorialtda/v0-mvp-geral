@@ -62,11 +62,8 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
             addComment(data.newComment.trim());
         }
 
-        // Do not close the modal, just reset the form fields for new comments
-        reset({
-            ...data, // keep description and dueDate
-            newComment: '' // clear the new comment field
-        });
+        // Close the modal after saving
+        onClose();
     };
 
     const handleUploadAttachment = (attachmentData: { file: FileList }) => {
