@@ -14,7 +14,6 @@ import { AttachmentList } from './AttachmentList';
 import { AttachmentForm } from './AttachmentForm';
 import { useAttachments } from '../hooks/useAttachments';
 
-// Add newComment to the schema
 const taskDetailSchema = z.object({
     description: z.string().optional(),
     dueDate: z.string().optional(),
@@ -32,14 +31,15 @@ interface TaskDetailModalProps {
 }
 
 export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }: TaskDetailModalProps) {
-    const { register, handleSubmit, reset, formState: { errors } } = useForm<TaskDetailForm>({
+    const { register, handleSubmit, reset } = useForm<TaskDetailForm>({
         resolver: zodResolver(taskDetailSchema),
         defaultValues: {
             description: task.description || '',
-            dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+            dueDate: task.dueDate && !isNaN(new Date(task.dueDate).getTime()) ? new Date(task.dueDate).toISOString().split('T')[0] : '',
             newComment: '',
         }
     });
+
     const { comments, addComment } = useComments(listId, task.id);
     const { attachments, uploadAttachment } = useAttachments(listId, task.id);
 
@@ -49,20 +49,22 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
             updates.description = data.description;
         }
         if (data.dueDate) {
-            updates.dueDate = new Date(data.dueDate);
+            const newDate = new Date(data.dueDate);
+            if (!isNaN(newDate.getTime())) {
+                updates.dueDate = newDate;
+            }
+        } else {
+          updates.dueDate = undefined;
         }
         
-        // Update task details if there are any changes
         if (Object.keys(updates).length > 0) {
             onUpdateTask(task.id, updates);
         }
 
-        // Add a new comment if text is provided
         if (data.newComment && data.newComment.trim() !== '') {
             addComment(data.newComment.trim());
         }
 
-        // Close the modal after saving
         onClose();
     };
 
@@ -72,9 +74,8 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
         }
     };
 
-    // Close modal and reset everything
     const handleClose = () => {
-        reset(); // Reset form on close
+        reset();
         onClose();
     };
 
@@ -97,7 +98,6 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
                             <Label htmlFor="dueDate">Due Date</Label>
                             <Input id="dueDate" type="date" {...register('dueDate')} />
                         </div>
-
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold">Comments</h3>
                             <CommentsList comments={comments} />
@@ -106,14 +106,12 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
                                 <Textarea id="newComment" {...register('newComment')} placeholder="Add a new comment..." />
                             </div>
                         </div>
-
                         <div className="space-y-4">
                             <h3 className="text-lg font-semibold">Attachments</h3>
                             <AttachmentList attachments={attachments} />
                             <AttachmentForm onSubmit={handleUploadAttachment} />
                         </div>
                     </div>
-                    
                     <div className="flex justify-end">
                         <Button type="submit">Save Changes</Button>
                     </div>
