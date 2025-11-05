@@ -54,7 +54,7 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
                 updates.dueDate = newDate;
             }
         } else {
-          updates.dueDate = undefined;
+          updates.dueDate = null;
         }
         
         if (Object.keys(updates).length > 0) {
