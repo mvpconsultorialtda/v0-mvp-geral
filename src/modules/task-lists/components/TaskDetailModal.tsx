@@ -45,18 +45,24 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
 
     const onSubmit = (data: TaskDetailForm) => {
         const updates: Partial<Task> = {};
-        if (data.description !== undefined) {
+        if (data.description !== task.description) {
             updates.description = data.description;
         }
-        if (data.dueDate) {
-            const newDate = new Date(data.dueDate);
-            if (!isNaN(newDate.getTime())) {
-                updates.dueDate = newDate;
+
+        const formDueDate = data.dueDate ? new Date(data.dueDate) : null;
+        if (formDueDate) {
+            const timezoneOffset = formDueDate.getTimezoneOffset() * 60000; // Offset in milliseconds
+            const adjustedDate = new Date(formDueDate.getTime() + timezoneOffset);
+
+            if (task.dueDate && new Date(task.dueDate).getTime() !== adjustedDate.getTime()) {
+                updates.dueDate = adjustedDate;
+            } else if (!task.dueDate) {
+                updates.dueDate = adjustedDate;
             }
-        } else {
-          updates.dueDate = null;
+        } else if (task.dueDate) {
+            updates.dueDate = null;
         }
-        
+
         if (Object.keys(updates).length > 0) {
             onUpdateTask(task.id, updates);
         }
@@ -67,6 +73,7 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
 
         onClose();
     };
+
 
     const handleUploadAttachment = (attachmentData: { file: FileList }) => {
         if (attachmentData.file.length > 0) {
