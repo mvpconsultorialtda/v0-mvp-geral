@@ -1,6 +1,7 @@
 'use client';
 
 import { Task } from '../../types';
+import { Badge } from '@/components/ui/badge';
 
 interface TaskItemProps {
   task: Task;
@@ -10,6 +11,14 @@ interface TaskItemProps {
 }
 
 export const TaskItem = ({ task, onUpdateTask, onDeleteTask, onSelectTask }: TaskItemProps) => {
+
+  const formatDate = (date: Date | string) => {
+    if (!date) return null;
+    const d = new Date(date);
+    // Ajuste para garantir que a data seja exibida corretamente, independentemente do fuso horário
+    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString();
+  };
+
   return (
     <li 
         className="flex items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm cursor-pointer"
@@ -25,9 +34,16 @@ export const TaskItem = ({ task, onUpdateTask, onDeleteTask, onSelectTask }: Tas
           }}
           className="h-5 w-5 rounded border-gray-300 text-black focus:ring-black"
         />
-        <span className={`ml-3 text-lg ${task.completed ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
-          {task.text}
-        </span>
+        <div className="ml-3">
+          <span className={`text-lg ${task.completed ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
+            {task.text}
+          </span>
+          {task.dueDate && (
+            <div className="text-sm text-gray-500 mt-1">
+              <Badge variant="secondary">{formatDate(task.dueDate)}</Badge>
+            </div>
+          )}
+        </div>
       </div>
       <button 
         onClick={(e) => {
