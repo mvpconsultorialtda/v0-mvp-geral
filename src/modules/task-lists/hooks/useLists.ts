@@ -9,16 +9,19 @@ import { TaskList } from '../types';
 export const useLists = () => {
     const user = auth.currentUser;
 
+    // CORREÇÃO: A coleção correta é "lists"
+    const collectionName = 'lists';
+
     // Query para listas onde o usuário é o dono
     const ownerQuery = user ? query(
-        collection(db, 'taskLists'),
+        collection(db, collectionName),
         where('ownerId', '==', user.uid),
         orderBy('createdAt', 'desc')
     ) : null;
 
     // Query para listas compartilhadas com o usuário
     const sharedQuery = user ? query(
-        collection(db, 'taskLists'),
+        collection(db, collectionName),
         where('sharedWith', 'array-contains', user.uid),
         orderBy('createdAt', 'desc')
     ) : null;
@@ -41,7 +44,6 @@ export const useLists = () => {
         });
 
         sharedListsSnapshot.docs.forEach(doc => {
-            // Evita duplicatas se uma lista for do proprietário e também compartilhada com ele mesmo
             if (!combinedLists.has(doc.id)) {
                 const data = doc.data();
                 combinedLists.set(doc.id, { 
@@ -51,10 +53,7 @@ export const useLists = () => {
                 } as TaskList);
             }
         });
-
-        // O useMemo aqui não consegue reordenar de forma eficaz porque os snapshots chegam em momentos diferentes.
-        // A ordenação final pode ser feita no componente que consome o hook, se necessário,
-        // ou aceitamos a ordenação separada do Firebase.
+        
         return Array.from(combinedLists.values());
 
     }, [ownerListsSnapshot, sharedListsSnapshot]);

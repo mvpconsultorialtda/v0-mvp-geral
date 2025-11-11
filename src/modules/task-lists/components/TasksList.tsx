@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { Task, TaskList } from '../types';
 import { createTask, updateTask, deleteTask } from '../services/taskService';
@@ -17,11 +17,12 @@ export const TasksList = ({ list }: TasksListProps) => {
   const [newTaskText, setNewTaskText] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  // Lógica de busca de tarefas movida para dentro do componente
+  // CORREÇÃO: Consulta a coleção raiz 'tasks' e filtra por 'listId'
   const tasksQuery = useMemo(() => 
-    query(collection(db, 'taskLists', list.id, 'tasks'), orderBy('createdAt', 'asc')),
+    query(collection(db, 'tasks'), where('listId', '==', list.id), orderBy('createdAt', 'asc')),
     [list.id]
   );
+  
   const [tasksSnapshot, loading] = useCollection(tasksQuery);
 
   const tasks = useMemo(() => 
@@ -57,6 +58,9 @@ export const TasksList = ({ list }: TasksListProps) => {
   const handleCloseModal = () => {
     setSelectedTask(null);
   };
+  
+  // NOTE: O componente TaskItem não foi incluído aqui para brevidade,
+  // mas ele precisa ser importado e usado como no seu arquivo original.
 
   return (
     <div>
@@ -83,7 +87,7 @@ export const TasksList = ({ list }: TasksListProps) => {
           <p className="text-gray-500 mt-2">Adicione uma nova tarefa para começar.</p>
         </div>
       ) : (
-        <ul className="space-y-3">
+         <ul className="space-y-3">
           {tasks.map(task => (
             <TaskItem 
               key={task.id} 

@@ -1,4 +1,3 @@
-
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase-client';
 import { TaskList } from '../types';
@@ -10,7 +9,8 @@ export const createList = async (listData: Omit<Partial<TaskList>, 'id' | 'owner
   const { name, description = '', sharedWith = [] } = listData;
   if (!name) throw new Error('List name is mandatory.');
 
-  const newListDoc = await addDoc(collection(db, 'taskLists'), {
+  // CORREÇÃO: A coleção correta é "lists"
+  const newListDoc = await addDoc(collection(db, 'lists'), {
     name,
     description,
     ownerId: user.uid,
