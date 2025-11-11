@@ -1,30 +1,26 @@
+'use client';
 
-import { useEffect, useState } from 'react';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { db } from '@/lib/firebase-client';
+import { addComment as addCommentService } from '../services/commentService';
 import { Comment } from '../types';
-import { getComments, addComment as addCommentService } from '../services/task-lists.service';
 
 export const useComments = (listId: string, taskId: string) => {
-    const [comments, setComments] = useState<Comment[]>([]);
+    const commentsCollection = collection(db, 'taskLists', listId, 'tasks', taskId, 'comments');
+    const commentsQuery = query(commentsCollection, orderBy('createdAt', 'asc'));
 
-    useEffect(() => {
-        if (!listId || !taskId) {
-            setComments([]);
-            return;
-        }
+    const [commentsSnapshot] = useCollection(commentsQuery);
 
-        const unsubscribe = getComments(listId, taskId, (fetchedComments) => {
-            setComments(fetchedComments);
-        });
-
-        return () => unsubscribe();
-    }, [listId, taskId]);
+    const comments = commentsSnapshot?.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+    })) as Comment[] | undefined;
 
     const addComment = (text: string) => {
         return addCommentService(listId, taskId, text);
     };
 
-    return {
-        comments,
-        addComment,
-    };
+    return { comments, addComment };
 };

@@ -1,38 +1,61 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Task, TaskList } from '../../types';
-import { useTasks } from '../hooks/useTasks';
+import React, { useState, useMemo } from 'react';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { Task, TaskList } from '../types';
+import { createTask, updateTask, deleteTask } from '../services/taskService';
 import { TaskItem } from './TaskItem';
 import { TaskDetailModal } from './TaskDetailModal';
+import { db } from '@/lib/firebase-client';
 
 interface TasksListProps {
   list: TaskList;
 }
 
 export const TasksList = ({ list }: TasksListProps) => {
-  const { tasks, createTask, updateTask, deleteTask } = useTasks(list.id);
   const [newTaskText, setNewTaskText] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  // Lógica de busca de tarefas movida para dentro do componente
+  const tasksQuery = useMemo(() => 
+    query(collection(db, 'taskLists', list.id, 'tasks'), orderBy('createdAt', 'asc')),
+    [list.id]
+  );
+  const [tasksSnapshot, loading] = useCollection(tasksQuery);
+
+  const tasks = useMemo(() => 
+    tasksSnapshot?.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        dueDate: doc.data().dueDate?.toDate(),
+        createdAt: doc.data().createdAt?.toDate(),
+    })) as Task[] || [],
+    [tasksSnapshot]
+  );
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (newTaskText.trim()) {
-      createTask(newTaskText.trim());
+      createTask(list.id, newTaskText.trim());
       setNewTaskText('');
     }
   };
 
+  const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
+    updateTask(list.id, taskId, updates);
+  };
+
+  const handleDeleteTask = (taskId: string) => {
+    deleteTask(list.id, taskId);
+  };
+
   const handleSelectTask = (task: Task) => {
-      setSelectedTask(task);
+    setSelectedTask(task);
   };
 
   const handleCloseModal = () => {
-      setSelectedTask(null);
-  };
-
-  const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
-      updateTask(taskId, updates);
+    setSelectedTask(null);
   };
 
   return (
@@ -52,7 +75,9 @@ export const TasksList = ({ list }: TasksListProps) => {
         </button>
       </form>
 
-      {tasks.length === 0 ? (
+      {loading ? (
+        <p>Carregando tarefas...</p>
+      ) : tasks.length === 0 ? (
         <div className="text-center p-8 bg-gray-50 rounded-lg">
           <h3 className="text-lg font-semibold text-gray-800">Nenhuma tarefa aqui!</h3>
           <p className="text-gray-500 mt-2">Adicione uma nova tarefa para começar.</p>
@@ -63,22 +88,22 @@ export const TasksList = ({ list }: TasksListProps) => {
             <TaskItem 
               key={task.id} 
               task={task} 
-              onUpdateTask={(taskId, updates) => updateTask(taskId, updates)} 
-              onDeleteTask={deleteTask} 
-              onSelectTask={handleSelectTask} 
+              onUpdateTask={(updates) => handleUpdateTask(task.id, updates)} 
+              onDeleteTask={() => handleDeleteTask(task.id)} 
+              onSelectTask={() => handleSelectTask(task)} 
             />
           ))}
         </ul>
       )}
 
       {selectedTask && (
-          <TaskDetailModal 
-            task={selectedTask} 
-            listId={list.id} // Passa o listId para o modal
-            isOpen={!!selectedTask} 
-            onClose={handleCloseModal} 
-            onUpdateTask={handleUpdateTask} 
-          />
+        <TaskDetailModal 
+          task={selectedTask} 
+          listId={list.id}
+          isOpen={!!selectedTask} 
+          onClose={handleCloseModal} 
+          onUpdateTask={(updates) => handleUpdateTask(selectedTask.id, updates)}
+        />
       )}
     </div>
   );

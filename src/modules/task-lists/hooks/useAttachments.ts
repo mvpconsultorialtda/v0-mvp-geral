@@ -1,30 +1,26 @@
+'use client';
 
-import { useEffect, useState } from 'react';
+import { collection, query, orderBy } from 'firebase/firestore';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { db } from '@/lib/firebase-client';
+import { uploadAttachment as uploadAttachmentService } from '../services/attachmentService';
 import { Attachment } from '../types';
-import { getAttachments, uploadAttachment as uploadAttachmentService } from '../services/task-lists.service';
 
 export const useAttachments = (listId: string, taskId: string) => {
-    const [attachments, setAttachments] = useState<Attachment[]>([]);
+    const attachmentsCollection = collection(db, 'taskLists', listId, 'tasks', taskId, 'attachments');
+    const attachmentsQuery = query(attachmentsCollection, orderBy('createdAt', 'asc'));
 
-    useEffect(() => {
-        if (!listId || !taskId) {
-            setAttachments([]);
-            return;
-        }
+    const [attachmentsSnapshot] = useCollection(attachmentsQuery);
 
-        const unsubscribe = getAttachments(listId, taskId, (fetchedAttachments) => {
-            setAttachments(fetchedAttachments);
-        });
-
-        return () => unsubscribe();
-    }, [listId, taskId]);
+    const attachments = attachmentsSnapshot?.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+    })) as Attachment[] | undefined;
 
     const uploadAttachment = (file: File) => {
         return uploadAttachmentService(listId, taskId, file);
     };
 
-    return {
-        attachments,
-        uploadAttachment,
-    };
+    return { attachments, uploadAttachment };
 };

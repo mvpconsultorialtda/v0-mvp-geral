@@ -1,67 +1,62 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy } from 'firebase/firestore';
+import { useCollection } from 'react-firebase-hooks/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/useAuth';
 import { Task } from '@/modules/task-lists/types';
 import { TasksList } from '@/modules/task-lists/components/TasksList';
 import { TaskDetailModal } from '@/modules/task-lists/components/TaskDetailModal';
-import { listTasks, updateTask as updateDbTask, deleteTask as deleteDbTask, createTask as createDbTask } from '@/modules/task-lists/services/taskService';
+import { createTask, updateTask, deleteTask } from '@/modules/task-lists/services/taskService';
 
 export default function ListDetailPage() {
     const { listId } = useParams();
     const { user } = useAuth();
-    const [tasks, setTasks] = useState<Task[]>([]);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [listName, setListName] = useState('');
 
-    useEffect(() => {
-        if (user && listId) {
-            const fetchTasks = async () => {
-                const fetchedTasks = await listTasks(listId as string);
-                setTasks(fetchedTasks);
-            };
+    const tasksCollection = collection(db, 'taskLists', listId as string, 'tasks');
+    const tasksQuery = query(tasksCollection, orderBy('createdAt', 'asc'));
 
+    const [tasksSnapshot, loading, error] = useCollection(tasksQuery);
+
+    const tasks = tasksSnapshot?.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        // Assegura que as datas sejam objetos Date do JS
+        dueDate: doc.data().dueDate?.toDate(),
+        createdAt: doc.data().createdAt?.toDate(),
+    })) as Task[] | undefined;
+
+    useEffect(() => {
+        if (listId) {
             const fetchListName = async () => {
                 const listDoc = await getDoc(doc(db, 'taskLists', listId as string));
                 if (listDoc.exists()) {
                     setListName(listDoc.data().name);
                 }
             };
-
-            fetchTasks();
             fetchListName();
         }
-    }, [user, listId]);
+    }, [listId]);
 
     const handleCreateTask = async (taskText: string) => {
-        const newTask = await createDbTask(listId as string, taskText);
-        setTasks(prevTasks => [...prevTasks, newTask]);
+        await createTask(listId as string, taskText);
     };
 
     const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
-        await updateDbTask(listId as string, taskId, updates);
-        // Atualiza o estado local para refletir a alteração imediatamente
-        setTasks(prevTasks =>
-            prevTasks.map(task =>
-                task.id === taskId ? { ...task, ...updates } : task
-            )
-        );
+        await updateTask(listId as string, taskId, updates);
+        // Não é mais necessário atualizar o estado local manualmente
+        if (selectedTask && selectedTask.id === taskId) {
+            // Atualiza o modal se a tarefa selecionada for a alterada
+            setSelectedTask(prev => ({ ...prev!, ...updates }));
+        }
     };
 
     const handleDeleteTask = async (taskId: string) => {
-        await deleteDbTask(listId as string, taskId);
-        setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-    };
-
-    const handleSelectTask = (task: Task) => {
-        setSelectedTask(task);
-    };
-
-    const handleCloseModal = () => {
-        setSelectedTask(null);
+        await deleteTask(listId as string, taskId);
     };
 
     if (!user) {
@@ -71,19 +66,23 @@ export default function ListDetailPage() {
     return (
         <div className="container mx-auto p-4">
             <h1 className="text-4xl font-bold mb-6">{listName}</h1>
-            <TasksList
-                tasks={tasks}
-                onCreateTask={handleCreateTask}
-                onUpdateTask={handleUpdateTask}
-                onDeleteTask={handleDeleteTask}
-                onSelectTask={handleSelectTask}
-            />
+            {loading && <p>Loading tasks...</p>}
+            {error && <p>Error loading tasks: {error.message}</p>}
+            {tasks && (
+                <TasksList
+                    tasks={tasks}
+                    onCreateTask={handleCreateTask}
+                    onUpdateTask={handleUpdateTask}
+                    onDeleteTask={handleDeleteTask}
+                    onSelectTask={setSelectedTask}
+                />
+            )}
             {selectedTask && (
                 <TaskDetailModal
                     task={selectedTask}
                     listId={listId as string}
                     isOpen={!!selectedTask}
-                    onClose={handleCloseModal}
+                    onClose={() => setSelectedTask(null)}
                     onUpdateTask={handleUpdateTask}
                 />
             )}
