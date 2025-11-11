@@ -1,27 +1,31 @@
 'use client';
 
 import { useMemo } from 'react';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, where, orderBy } from 'firebase/firestore'; // CORREÇÃO: Importar 'where'
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { useLists } from '@/modules/task-lists/hooks/useLists';
 import { createTask, updateTask, deleteTask } from '@/modules/task-lists/services/taskService';
 import { TaskDetailView } from '@/modules/task-lists/components/TaskDetailView';
-import { Task, TaskList } from '@/modules/task-lists/types';
+import { Task } from '@/modules/task-lists/types';
 import { db } from '@/lib/firebase-client';
 
-// Página dinâmica para exibir os detalhes e tarefas de uma lista específica
 export default function ListDetailPage({ params }: { params: { listId: string } }) {
   const { listId } = params;
 
-  // 1. Busca a lista ativa
+  // 1. Busca a lista ativa (Esta parte está correta)
   const { lists, loading: listsLoading } = useLists();
   const activeList = useMemo(() => lists?.find(l => l.id === listId), [lists, listId]);
 
-  // 2. Busca as tarefas da lista ativa de forma reativa
+  // 2. CORREÇÃO: Busca as tarefas na coleção raiz 'tasks' e filtra pelo 'listId'
   const tasksQuery = useMemo(() => 
-    listId ? query(collection(db, 'taskLists', listId, 'tasks'), orderBy('createdAt', 'asc')) : null,
+    listId ? query(
+      collection(db, 'tasks'), 
+      where('listId', '==', listId), 
+      orderBy('createdAt', 'asc')
+    ) : null,
     [listId]
   );
+  
   const [tasksSnapshot, tasksLoading] = useCollection(tasksQuery);
 
   const tasks = useMemo(() => 
@@ -34,11 +38,13 @@ export default function ListDetailPage({ params }: { params: { listId: string } 
     [tasksSnapshot]
   );
 
-  // 3. Funções para manipular tarefas (agora chamam o serviço diretamente)
+  // 3. Funções para manipular tarefas
   const handleAddTask = (text: string) => {
+    // A função de serviço já sabe como criar a tarefa na coleção correta
     return createTask(listId, text);
   };
 
+  // Esta função agora passa o listId para o serviço, garantindo que o update tenha o contexto necessário
   const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
     return updateTask(listId, taskId, updates);
   };
@@ -60,6 +66,16 @@ export default function ListDetailPage({ params }: { params: { listId: string } 
   }
 
   if (!activeList) {
+    // Adiciona uma verificação para o estado de carregamento inicial
+    if (listsLoading) {
+      return (
+        <div className="flex h-screen items-center justify-center">
+            <div className="text-center">
+                <h2 className="text-2xl font-semibold text-gray-700">Carregando listas...</h2>
+            </div>
+        </div>
+      );
+    }
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">

@@ -1,15 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Task, TaskList, TaskStatus } from '../../types';
+import { Task, TaskList } from '@/modules/task-lists/types'; // CORREÇÃO: Caminho do tipo ajustado
 import { TasksList } from './TasksList';
-import KanbanBoardView from '../../../components/KanbanBoardView';
+import KanbanBoardView from '@/components/KanbanBoardView'; // CORREÇÃO: Caminho do componente ajustado
 
 interface TaskDetailViewProps {
   activeList: TaskList | null;
   tasks: Task[];
   onAddTask: (text: string) => void;
-  onUpdateTask: (taskId: string, listId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'status'>>) => void;
+  // CORREÇÃO: A assinatura foi simplificada. O listId não é mais necessário aqui.
+  onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
   onDeleteTask: (taskId: string) => void;
 }
 
@@ -47,10 +48,10 @@ export const TaskDetailView = ({ activeList, tasks, onAddTask, onUpdateTask, onD
 
       <div className="flex-1 overflow-y-auto">
         {viewMode === 'list' ? (
-          <TasksList tasks={tasks} onUpdateTask={onUpdateTask} onDeleteTask={onDeleteTask} />
+          // CORREÇÃO: Passando onUpdateTask simplificado para TasksList
+          <TasksList list={activeList} />
         ) : (
-          // A função onUpdateTask agora é passada para o quadro Kanban.
-          <KanbanBoardView tasks={tasks} onUpdateTask={onUpdateTask} />
+          <KanbanBoardView tasks={tasks} onUpdateTask={(taskId, updates) => onUpdateTask(taskId, updates)} />
         )}
       </div>
       
