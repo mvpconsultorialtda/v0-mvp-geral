@@ -44,7 +44,6 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
     const { attachments, uploadAttachment } = useAttachments(listId, task.id);
 
     const onSubmit = (data: TaskDetailForm) => {
-        console.log("[Debug] Formulário submetido com os seguintes dados:", data);
         const updates: Partial<Task> = {};
 
         if (data.description !== task.description) {
@@ -52,31 +51,24 @@ export function TaskDetailModal({ task, listId, isOpen, onClose, onUpdateTask }:
         }
 
         const formDueDateStr = data.dueDate;
-        console.log(`[Debug] String da data do formulário: '${formDueDateStr}'`);
 
         if (formDueDateStr) {
             // Trata a string da data como UTC para evitar problemas de fuso horário
             const [year, month, day] = formDueDateStr.split('-').map(Number);
             const adjustedDate = new Date(Date.UTC(year, month - 1, day));
-            console.log("[Debug] Data ajustada para UTC:", adjustedDate);
 
             const originalTime = task.dueDate ? new Date(task.dueDate).getTime() : 0;
             const newTime = adjustedDate.getTime();
 
             if (originalTime !== newTime) {
                 updates.dueDate = adjustedDate;
-                console.log("[Debug] A data de vencimento foi alterada. A atualizar para:", adjustedDate);
             }
         } else if (task.dueDate) {
             updates.dueDate = null;
-            console.log("[Debug] A data de vencimento foi removida.");
         }
         
         if (Object.keys(updates).length > 0) {
-            console.log("[Debug] A chamar onUpdateTask com as seguintes atualizações:", updates);
             onUpdateTask(task.id, updates);
-        } else {
-            console.log("[Debug] Nenhuma alteração detetada. Nada a salvar.");
         }
 
         if (data.newComment && data.newComment.trim() !== '') {
