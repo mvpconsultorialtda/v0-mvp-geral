@@ -1,24 +1,24 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Task, TaskStatus } from '../../modules/types';
+import { useMemo, useState } from 'react';
+import { Task, TaskStatus } from '../modules/task-lists/types';
 import { KanbanColumn } from './KanbanColumn';
+import { TaskDetailModal } from '../modules/task-lists/components/TaskDetailModal';
 
 interface KanbanBoardViewProps {
-  tasks: Task[] | undefined; // A propriedade pode ser indefinida durante o carregamento
+  tasks: Task[] | undefined;
   onUpdateTask: (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'status'>>) => void;
 }
 
 const KanbanBoardView = ({ tasks, onUpdateTask }: KanbanBoardViewProps) => {
-  // Define as colunas do quadro Kanban
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
   const columns: TaskStatus[] = ['Pendente', 'Em Andamento', 'Concluído'];
 
-  // O useMemo agora verifica se as tarefas existem antes de processá-las
   const tasksByStatus = useMemo(() => {
-    if (!tasks) { // Se as tarefas não foram carregadas, retorna um objeto vazio
+    if (!tasks) {
       return {};
     }
-    // Agrupa as tarefas por status
     return tasks.reduce((acc, task) => {
       if (!acc[task.status]) {
         acc[task.status] = [];
@@ -28,22 +28,41 @@ const KanbanBoardView = ({ tasks, onUpdateTask }: KanbanBoardViewProps) => {
     }, {} as Record<TaskStatus, Task[]>);
   }, [tasks]);
 
-  // Se as tarefas ainda não foram carregadas, exibe uma mensagem
+  const handleSelectTask = (task: Task) => {
+    setSelectedTask(task);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedTask(null);
+  };
+
   if (!tasks) {
     return <div className="text-center p-8">Carregando tarefas...</div>;
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {columns.map(status => (
-        <KanbanColumn
-          key={status}
-          status={status}
-          tasks={tasksByStatus[status] || []} // Garante que um array seja sempre passado
-          onUpdateTask={onUpdateTask}
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {columns.map(status => (
+          <KanbanColumn
+            key={status}
+            status={status}
+            tasks={tasksByStatus[status] || []}
+            onUpdateTask={onUpdateTask}
+            onSelectTask={handleSelectTask}
+          />
+        ))}
+      </div>
+      {selectedTask && (
+        <TaskDetailModal
+          task={selectedTask}
+          listId={selectedTask.listId}
+          isOpen={!!selectedTask}
+          onClose={handleCloseModal}
+          onUpdateTask={(updates) => onUpdateTask(selectedTask.id, updates)}
         />
-      ))}
-    </div>
+      )}
+    </>
   );
 };
 

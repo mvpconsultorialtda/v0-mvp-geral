@@ -49,7 +49,7 @@ export const TaskDetailView = ({ activeList, tasks, onAddTask, onUpdateTask, onD
       <div className="flex-1 overflow-y-auto">
         {viewMode === 'list' ? (
           // CORREÇÃO: Passando onUpdateTask simplificado para TasksList
-          <TasksList list={activeList} />
+          <TasksList list={activeList} tasks={tasks} onUpdateTask={onUpdateTask} onDeleteTask={onDeleteTask} />
         ) : (
           <KanbanBoardView tasks={tasks} onUpdateTask={(taskId, updates) => onUpdateTask(taskId, updates)} />
         )}
