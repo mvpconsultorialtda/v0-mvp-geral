@@ -56,7 +56,7 @@ export const TasksList = ({ list, tasks, isLoading, onAddTask, onUpdateTask, onD
         <div className="flex justify-center p-8">
           <Spinner />
         </div>
-      ) : tasks.length === 0 ? (
+      ) : !tasks || tasks.length === 0 ? (
         <div className="text-center p-8 bg-gray-50 rounded-lg">
           <h3 className="text-lg font-semibold text-gray-800">Nenhuma tarefa aqui!</h3>
           <p className="text-gray-500 mt-2">Adicione uma nova tarefa para começar.</p>
