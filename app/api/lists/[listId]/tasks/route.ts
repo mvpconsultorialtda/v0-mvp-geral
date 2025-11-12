@@ -1,15 +1,26 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '../../../../../lib/firebase/admin';
-import { TaskStatus } from '../../../../../src/modules/task-lists/types';
+import { getFirestore } from '@/lib/firebase-admin.server';
+import { TaskStatus } from '@/modules/task-lists/types';
+import { withAuth } from '@/lib/api/middleware';
+import { verifyListOwnership } from '@/lib/api/auth';
 
 // GET /api/lists/[listId]/tasks
 // Obtém as tarefas de uma lista específica.
-export async function GET(request: Request, { params }: { params: { listId: string } }) {
+export const GET = withAuth(async (request, { params, user }) => {
   const { listId } = params;
-  // TODO: Validar o acesso do usuário à lista (listId) antes de retornar as tarefas.
+  const { uid } = user;
 
+  const isOwner = await verifyListOwnership(listId, uid);
+  if (!isOwner) {
+    return new NextResponse(
+      JSON.stringify({ success: false, message: 'Forbidden' }),
+      { status: 403, headers: { 'content-type': 'application/json' } }
+    );
+  }
+
+  const db = getFirestore();
   try {
-    const tasksSnapshot = await adminDb.collection('tasks').where('listId', '==', listId).orderBy('order').get();
+    const tasksSnapshot = await db.collection('tasks').where('listId', '==', listId).orderBy('order').get();
     const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     return NextResponse.json(tasks);
@@ -20,14 +31,23 @@ export async function GET(request: Request, { params }: { params: { listId: stri
       { status: 500, headers: { 'content-type': 'application/json' } }
     );
   }
-}
+});
 
 // POST /api/lists/[listId]/tasks
 // Cria uma nova tarefa em uma lista específica.
-export async function POST(request: Request, { params }: { params: { listId: string } }) {
+export const POST = withAuth(async (request, { params, user }) => {
   const { listId } = params;
-  // TODO: Validar o acesso do usuário à lista (listId) antes de criar a tarefa.
+  const { uid } = user;
 
+  const isOwner = await verifyListOwnership(listId, uid);
+  if (!isOwner) {
+    return new NextResponse(
+      JSON.stringify({ success: false, message: 'Forbidden' }),
+      { status: 403, headers: { 'content-type': 'application/json' } }
+    );
+  }
+
+  const db = getFirestore();
   try {
     const { text, order } = await request.json();
 
@@ -47,7 +67,7 @@ export async function POST(request: Request, { params }: { params: { listId: str
       createdAt: new Date(),
     };
 
-    const docRef = await adminDb.collection('tasks').add(newTask);
+    const docRef = await db.collection('tasks').add(newTask);
 
     return NextResponse.json({ id: docRef.id, ...newTask }, { status: 201 });
   } catch (error) {
@@ -57,4 +77,4 @@ export async function POST(request: Request, { params }: { params: { listId: str
       { status: 500, headers: { 'content-type': 'application/json' } }
     );
   }
-}
+});

@@ -1,54 +1,30 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { collection, query, where, orderBy } from 'firebase/firestore';
-import { useCollection } from 'react-firebase-hooks/firestore';
+import React, { useState } from 'react';
 import { Task, TaskList } from '../types';
-import { createTask, updateTask, deleteTask } from '../services/taskService';
 import { TaskItem } from './TaskItem';
 import { TaskDetailModal } from './TaskDetailModal';
-import { db } from '@/lib/firebase-client';
+import { Spinner } from '@/components/ui/spinner';
 
 interface TasksListProps {
   list: TaskList;
+  tasks: Task[];
+  isLoading: boolean;
+  onAddTask: (text: string) => void;
+  onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
+  onDeleteTask: (taskId: string) => void;
 }
 
-export const TasksList = ({ list }: TasksListProps) => {
+export const TasksList = ({ list, tasks, isLoading, onAddTask, onUpdateTask, onDeleteTask }: TasksListProps) => {
   const [newTaskText, setNewTaskText] = useState('');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-
-  // CORREÇÃO: Consulta a coleção raiz 'tasks' e filtra por 'listId'
-  const tasksQuery = useMemo(() => 
-    query(collection(db, 'tasks'), where('listId', '==', list.id), orderBy('createdAt', 'asc')),
-    [list.id]
-  );
-  
-  const [tasksSnapshot, loading] = useCollection(tasksQuery);
-
-  const tasks = useMemo(() => 
-    tasksSnapshot?.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        dueDate: doc.data().dueDate?.toDate(),
-        createdAt: doc.data().createdAt?.toDate(),
-    })) as Task[] || [],
-    [tasksSnapshot]
-  );
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (newTaskText.trim()) {
-      createTask(list.id, newTaskText.trim());
+      onAddTask(newTaskText.trim());
       setNewTaskText('');
     }
-  };
-
-  const handleUpdateTask = (taskId: string, updates: Partial<Task>) => {
-    updateTask(list.id, taskId, updates);
-  };
-
-  const handleDeleteTask = (taskId: string) => {
-    deleteTask(list.id, taskId);
   };
 
   const handleSelectTask = (task: Task) => {
@@ -58,9 +34,6 @@ export const TasksList = ({ list }: TasksListProps) => {
   const handleCloseModal = () => {
     setSelectedTask(null);
   };
-  
-  // NOTE: O componente TaskItem não foi incluído aqui para brevidade,
-  // mas ele precisa ser importado e usado como no seu arquivo original.
 
   return (
     <div>
@@ -79,8 +52,10 @@ export const TasksList = ({ list }: TasksListProps) => {
         </button>
       </form>
 
-      {loading ? (
-        <p>Carregando tarefas...</p>
+      {isLoading ? (
+        <div className="flex justify-center p-8">
+          <Spinner />
+        </div>
       ) : tasks.length === 0 ? (
         <div className="text-center p-8 bg-gray-50 rounded-lg">
           <h3 className="text-lg font-semibold text-gray-800">Nenhuma tarefa aqui!</h3>
@@ -92,8 +67,8 @@ export const TasksList = ({ list }: TasksListProps) => {
             <TaskItem 
               key={task.id} 
               task={task} 
-              onUpdateTask={(updates) => handleUpdateTask(task.id, updates)} 
-              onDeleteTask={() => handleDeleteTask(task.id)} 
+              onUpdateTask={(updates) => onUpdateTask(task.id, updates)} 
+              onDeleteTask={() => onDeleteTask(task.id)} 
               onSelectTask={() => handleSelectTask(task)} 
             />
           ))}
@@ -106,7 +81,7 @@ export const TasksList = ({ list }: TasksListProps) => {
           listId={list.id}
           isOpen={!!selectedTask} 
           onClose={handleCloseModal} 
-          onUpdateTask={(updates) => handleUpdateTask(selectedTask.id, updates)}
+          onUpdateTask={(updates) => onUpdateTask(selectedTask.id, updates)}
         />
       )}
     </div>

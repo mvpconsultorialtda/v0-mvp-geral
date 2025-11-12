@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '../../../lib/firebase/admin';
+import { getFirestore } from '@/lib/firebase-admin.server';
+import { withAuth } from '@/lib/api/middleware';
 
 // GET /api/lists
 // Obtém as listas de tarefas do usuário.
-export async function GET() {
-  // TODO: Extrair o UID do usuário a partir do token de autenticação.
-  const userId = "mock-user-id";
+export const GET = withAuth(async (request, { user }) => {
+  const userId = user.uid;
 
+  const db = getFirestore();
   try {
-    const listsSnapshot = await adminDb.collection('lists').where('ownerId', '==', userId).get();
+    const listsSnapshot = await db.collection('lists').where('ownerId', '==', userId).get();
     const lists = listsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     return NextResponse.json(lists);
@@ -19,14 +20,14 @@ export async function GET() {
       { status: 500, headers: { 'content-type': 'application/json' } }
     );
   }
-}
+});
 
 // POST /api/lists
 // Cria uma nova lista de tarefas.
-export async function POST(request: Request) {
-  // TODO: Extrair o UID do usuário a partir do token de autenticação.
-  const userId = "mock-user-id";
+export const POST = withAuth(async (request, { user }) => {
+  const userId = user.uid;
 
+  const db = getFirestore();
   try {
     const { name } = await request.json();
 
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
       createdAt: new Date(),
     };
 
-    const docRef = await adminDb.collection('lists').add(newList);
+    const docRef = await db.collection('lists').add(newList);
 
     return NextResponse.json({ id: docRef.id, ...newList }, { status: 201 });
 
@@ -55,4 +56,4 @@ export async function POST(request: Request) {
       { status: 500, headers: { 'content-type': 'application/json' } }
     );
   }
-}
+});

@@ -1,17 +1,28 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '../../../../lib/firebase/admin';
-import { TaskStatus } from '../../../../src/modules/task-lists/types';
+import { getFirestore } from '@/lib/firebase-admin.server';
+import { TaskStatus } from '@/modules/task-lists/types';
+import { withAuth } from '@/lib/api/middleware';
+import { verifyTaskPermission } from '@/lib/api/auth';
 
 // PATCH /api/tasks/[taskId]
 // Atualiza uma tarefa, sincronizando `status` e `completed`.
-export async function PATCH(request: Request, { params }: { params: { taskId: string } }) {
+export const PATCH = withAuth(async (request, { params, user }) => {
   const { taskId } = params;
-  // TODO: Validar o acesso do usuário à tarefa (taskId) antes de atualizar.
+  const { uid } = user;
 
+  const hasPermission = await verifyTaskPermission(taskId, uid);
+  if (!hasPermission) {
+    return new NextResponse(
+      JSON.stringify({ success: false, message: 'Forbidden' }),
+      { status: 403, headers: { 'content-type': 'application/json' } }
+    );
+  }
+
+  const db = getFirestore();
   try {
     const { text, completed, status, order } = await request.json();
 
-    const taskRef = adminDb.collection('tasks').doc(taskId);
+    const taskRef = db.collection('tasks').doc(taskId);
     const updateData: { [key: string]: any } = {};
 
     if (text !== undefined) updateData.text = text;
@@ -41,16 +52,25 @@ export async function PATCH(request: Request, { params }: { params: { taskId: st
       { status: 500, headers: { 'content-type': 'application/json' } }
     );
   }
-}
+});
 
 // DELETE /api/tasks/[taskId]
 // Exclui uma tarefa.
-export async function DELETE(request: Request, { params }: { params: { taskId: string } }) {
+export const DELETE = withAuth(async (request, { params, user }) => {
   const { taskId } = params;
-  // TODO: Validar o acesso do usuário à tarefa (taskId) antes de excluir.
+  const { uid } = user;
 
+  const hasPermission = await verifyTaskPermission(taskId, uid);
+  if (!hasPermission) {
+    return new NextResponse(
+      JSON.stringify({ success: false, message: 'Forbidden' }),
+      { status: 403, headers: { 'content-type': 'application/json' } }
+    );
+  }
+
+  const db = getFirestore();
   try {
-    await adminDb.collection('tasks').doc(taskId).delete();
+    await db.collection('tasks').doc(taskId).delete();
 
     return new NextResponse(null, { status: 204 }); // No Content
 
@@ -61,4 +81,4 @@ export async function DELETE(request: Request, { params }: { params: { taskId: s
       { status: 500, headers: { 'content-type': 'application/json' } }
     );
   }
-}
+});
