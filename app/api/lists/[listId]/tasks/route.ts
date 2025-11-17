@@ -20,7 +20,7 @@ export const GET = withAuth(async (request, { params, user }) => {
 
   const db = getFirestore();
   try {
-    const tasksSnapshot = await db.collection('tasks').where('listId', '==', listId).orderBy('order').get();
+    const tasksSnapshot = await db.collection('tasks').where('listId', '==', listId).orderBy('order').orderBy('createdAt', 'desc').get();
     const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     return NextResponse.json(tasks);

@@ -20,7 +20,7 @@ export default function ListDetailPage({ params }: { params: { listId: string } 
   // 2. Funções de mutação que chamam a API e atualizam o cache do SWR
   const handleAddTask = async (text: string) => {
     const tempId = `temp-${Date.now()}`;
-    const newTask = { text, listId, order: (tasks?.length || 0) + 1 };
+    const newTask = { text, listId, order: (tasks?.length || 0) + 1, createdAt: new Date() };
     
     // Atualização otimista
     await mutateTasks(

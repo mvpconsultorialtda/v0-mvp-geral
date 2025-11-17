@@ -1,12 +1,12 @@
 
 // Módulos simulados no topo
 jest.mock('@/lib/firebase-admin.server');
-jest.mock('@/modules/todo-list/core.server');
+jest.mock('@/modules/task-lists/core.server');
 
 import { testApiHandler } from 'next-test-api-route-handler';
-import * as listHandler from '@/app/api/todo-lists/route';
+import * as listHandler from '@/app/api/lists/route';
 import { getAdminAuth } from '@/lib/firebase-admin.server';
-import { createTodoList } from '@/modules/todo-list/core.server';
+import { createList } from '@/modules/task-lists/core.server';
 
 describe('API Handler de Integração - Correção Final', () => {
 
