@@ -1,15 +1,21 @@
 
+// Defines the possible statuses for a task, representing the columns in the Kanban board.
+export const taskStatuses = ['A Fazer', 'Em Andamento', 'Concluído'] as const;
+export type TaskStatus = typeof taskStatuses[number];
+
 export type MemberRole = 'editor' | 'viewer';
 
 export interface Task {
   id: string;
   listId: string;
   text: string;
-  completed: boolean;
+  // 'completed' is replaced by 'status' for a proper Kanban board implementation.
+  status: TaskStatus;
   order: number;
-  createdAt: Date;
+  // Dates are standardized to string (ISO format) to prevent serialization issues.
+  createdAt: string;
   description?: string;
-  dueDate?: Date;
+  dueDate?: string | null;
 }
 
 export interface TaskList {
@@ -18,7 +24,7 @@ export interface TaskList {
   ownerId: string;
   members: Record<string, MemberRole>;
   description: string;
-  createdAt: Date;
+  createdAt: string;
 }
 
 export interface Comment {
@@ -26,7 +32,7 @@ export interface Comment {
     taskId: string;
     userId: string;
     text: string;
-    createdAt: Date;
+    createdAt: string;
 }
 
 export interface Attachment {
@@ -35,5 +41,5 @@ export interface Attachment {
     userId: string;
     url: string;
     name: string;
-    createdAt: Date;
+    createdAt: string;
 }

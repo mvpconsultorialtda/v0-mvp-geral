@@ -1,19 +1,19 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Task, TaskStatus } from '../modules/task-lists/types';
+import { Task, TaskStatus, taskStatuses } from '../modules/task-lists/types';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskDetailModal } from '../modules/task-lists/components/TaskDetailModal';
+import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 
 interface KanbanBoardViewProps {
   tasks: Task[] | undefined;
-  onUpdateTask: (taskId: string, updates: Partial<Pick<Task, 'text' | 'completed' | 'status'>>) => void;
+  onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
 }
 
 const KanbanBoardView = ({ tasks, onUpdateTask }: KanbanBoardViewProps) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-
-  const columns: TaskStatus[] = ['Pendente', 'Em Andamento', 'Concluído'];
 
   const tasksByStatus = useMemo(() => {
     if (!tasks) {
@@ -27,6 +27,29 @@ const KanbanBoardView = ({ tasks, onUpdateTask }: KanbanBoardViewProps) => {
       return acc;
     }, {} as Record<TaskStatus, Task[]>);
   }, [tasks]);
+
+  const handleOnDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) {
+      return;
+    }
+
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    const startColumn = tasksByStatus[source.droppableId as TaskStatus];
+    const endColumn = tasksByStatus[destination.droppableId as TaskStatus];
+    const task = startColumn.find(t => t.id === draggableId);
+
+    if (task) {
+      onUpdateTask(task.id, { status: destination.droppableId as TaskStatus });
+    }
+  };
 
   const handleSelectTask = (task: Task) => {
     setSelectedTask(task);
@@ -42,24 +65,26 @@ const KanbanBoardView = ({ tasks, onUpdateTask }: KanbanBoardViewProps) => {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {columns.map(status => (
-          <KanbanColumn
-            key={status}
-            status={status}
-            tasks={tasksByStatus[status] || []}
-            onUpdateTask={onUpdateTask}
-            onSelectTask={handleSelectTask}
-          />
-        ))}
-      </div>
+      <DragDropContext onDragEnd={handleOnDragEnd}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {taskStatuses.map(status => (
+            <KanbanColumn
+              key={status}
+              status={status}
+              tasks={tasksByStatus[status] || []}
+              onUpdateTask={onUpdateTask}
+              onSelectTask={handleSelectTask}
+            />
+          ))}
+        </div>
+      </DragDropContext>
       {selectedTask && (
         <TaskDetailModal
           task={selectedTask}
           listId={selectedTask.listId}
           isOpen={!!selectedTask}
           onClose={handleCloseModal}
-          onUpdateTask={(updates) => onUpdateTask(selectedTask.id, updates)}
+          onUpdateTask={(taskId, updates) => onUpdateTask(taskId, updates)}
         />
       )}
     </>

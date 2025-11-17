@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -6,68 +7,43 @@ import { useTasks } from '@/modules/task-lists/hooks/use-tasks';
 import apiClient from '@/lib/api/client';
 import { TaskDetailView } from '@/modules/task-lists/components/TaskDetailView';
 import { Task } from '@/modules/task-lists/types';
-import { Spinner } from '@/components/ui/spinner'; // Supondo que você tenha um componente de spinner
+import { Spinner } from '@/components/ui/spinner';
 
 export default function ListDetailPage({ params }: { params: { listId: string } }) {
   const { listId } = params;
 
-  // 1. Busca dados usando os novos hooks SWR
   const { lists, isLoading: listsLoading } = useLists();
   const { tasks, isLoading: tasksLoading, mutate: mutateTasks } = useTasks(listId);
 
   const activeList = useMemo(() => lists?.find(l => l.id === listId), [lists, listId]);
 
-  // 2. Funções de mutação que chamam a API e atualizam o cache do SWR
   const handleAddTask = async (text: string) => {
-    const tempId = `temp-${Date.now()}`;
-    const newTask = { text, listId, order: (tasks?.length || 0) + 1, createdAt: new Date().toISOString() };
-    
-    // Atualização otimista
-    await mutateTasks(
-      (currentTasks) => [...(currentTasks || []), { ...newTask, id: tempId, status: 'Pendente' } as Task], 
-      false
-    );
-
     try {
+      const newTask = { text, listId, order: (tasks?.length || 0) + 1 };
       await apiClient(`/lists/${listId}/tasks`, { method: 'POST', body: newTask });
-      // Revalida para obter o objeto de tarefa real do servidor
+      // After creating the task, re-fetch the task list to ensure the UI is in sync.
       await mutateTasks();
     } catch (error) {
       console.error("Failed to create task", error);
-      // Reverte em caso de erro
-      await mutateTasks(); 
+      // Optionally, show an error message to the user.
     }
   };
 
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
-    // Atualização otimista
-    await mutateTasks(
-      (currentTasks) => currentTasks?.map(t => t.id === taskId ? { ...t, ...updates } : t),
-      false
-    );
-
     try {
       await apiClient(`/tasks/${taskId}`, { method: 'PATCH', body: updates });
       await mutateTasks();
     } catch (error) {
       console.error("Failed to update task", error);
-      await mutateTasks();
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    // Atualização otimista
-    await mutateTasks(
-      (currentTasks) => currentTasks?.filter(t => t.id !== taskId),
-      false
-    );
-
     try {
       await apiClient(`/tasks/${taskId}`, { method: 'DELETE' });
       await mutateTasks();
     } catch (error) {
       console.error("Failed to delete task", error);
-      await mutateTasks();
     }
   };
 

@@ -1,11 +1,11 @@
+
 import { NextResponse } from 'next/server';
 import { getFirestore } from '@/lib/firebase-admin.server';
-import { TaskStatus } from '@/modules/task-lists/types';
 import { withAuth } from '@/lib/api/middleware';
 import { verifyListOwnership } from '@/lib/api/auth';
 
 // GET /api/lists/[listId]/tasks
-// Obtém as tarefas de uma lista específica.
+// Fetches the tasks for a specific list.
 export const GET = withAuth(async (request, { params, user }) => {
   const { listId } = params;
   const { uid } = user;
@@ -20,15 +20,8 @@ export const GET = withAuth(async (request, { params, user }) => {
 
   const db = getFirestore();
   try {
-    const tasksSnapshot = await db.collection('tasks').where('listId', '==', listId).orderBy('order').orderBy('createdAt', 'desc').get();
-    const tasks = tasksSnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
-      };
-    });
+    const tasksSnapshot = await db.collection('tasks').where('listId', '==', listId).orderBy('order').get();
+    const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     return NextResponse.json(tasks);
   } catch (error) {
@@ -41,7 +34,7 @@ export const GET = withAuth(async (request, { params, user }) => {
 });
 
 // POST /api/lists/[listId]/tasks
-// Cria uma nova tarefa em uma lista específica.
+// Creates a new task in a specific list.
 export const POST = withAuth(async (request, { params, user }) => {
   const { listId } = params;
   const { uid } = user;
@@ -68,8 +61,7 @@ export const POST = withAuth(async (request, { params, user }) => {
     const newTask = {
       listId,
       text,
-      completed: false,
-      status: 'A Fazer' as TaskStatus, // Status inicial padrão
+      status: 'A Fazer', // Default status for new tasks
       order,
       createdAt: new Date().toISOString(),
     };
