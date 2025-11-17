@@ -6,10 +6,10 @@ const createJestConfig = nextJest({ dir: './' });
 
 // Define o mapeador de módulo reutilizável com a ordem correta.
 const commonModuleNameMapper = {
-  // A regra específica DEVE vir primeiro.
   '^@/app/(.*)$': '<rootDir>/app/$1',
-  // A regra genérica vem depois.
-  '^@/(.*)$': '<rootDir>/src/$1',
+  '^@/src/(.*)$': '<rootDir>/src/$1',
+  '^@/lib/(.*)$': '<rootDir>/lib/$1',
+  '^@/modules/(.*)$': '<rootDir>/src/modules/$1',
 };
 
 // Configuração de transformação para usar o Babel
@@ -28,7 +28,8 @@ const config: Config = {
       testMatch: [
         '**/__tests__/pages/**/*.test.tsx',
         '**/__tests__/components/**/*.test.tsx',
-        '**/__tests__/test-utils.test.tsx'
+        '**/__tests__/test-utils.test.tsx',
+        '**/__tests__/modules/**/*.test.tsx'
       ],
       moduleNameMapper: commonModuleNameMapper,
       transform, // Adiciona a transformação para o cliente
