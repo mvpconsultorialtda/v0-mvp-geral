@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 export async function POST() {
   try {
     // 1. Obtenha a instância do armazenamento de cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
 
     // 2. "Delete" o cookie da sessão definindo seu valor como vazio e a data de expiração no passado
     cookieStore.set('session', '', {

@@ -21,7 +21,14 @@ export const GET = withAuth(async (request, { params, user }) => {
   const db = getFirestore();
   try {
     const tasksSnapshot = await db.collection('tasks').where('listId', '==', listId).orderBy('order').orderBy('createdAt', 'desc').get();
-    const tasks = tasksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const tasks = tasksSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+      };
+    });
 
     return NextResponse.json(tasks);
   } catch (error) {
@@ -64,7 +71,7 @@ export const POST = withAuth(async (request, { params, user }) => {
       completed: false,
       status: 'A Fazer' as TaskStatus, // Status inicial padrão
       order,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     };
 
     const docRef = await db.collection('tasks').add(newTask);

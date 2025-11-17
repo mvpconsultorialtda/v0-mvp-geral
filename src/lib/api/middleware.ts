@@ -22,7 +22,7 @@ type Handler<T = any> = (
  */
 export function withAuth<T = any>(handler: Handler<T>) {
   return async (request: Request, context: T): Promise<NextResponse> => {
-    const authorization = headers().get('Authorization');
+    const authorization = (await headers()).get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {
       return new NextResponse(
         JSON.stringify({ success: false, message: 'Authorization header missing or invalid.' }),

@@ -81,7 +81,7 @@ export const TasksList = ({ list, tasks, isLoading, onAddTask, onUpdateTask, onD
           listId={list.id}
           isOpen={!!selectedTask} 
           onClose={handleCloseModal} 
-          onUpdateTask={(updates) => onUpdateTask(selectedTask.id, updates)}
+          onUpdateTask={(taskId, updates) => onUpdateTask(taskId, updates)}
         />
       )}
     </div>
