@@ -20,7 +20,7 @@ const mockService = TaskListService as jest.Mocked<typeof TaskListService>;
 const renderComponent = () =>
   render(
     <TaskListProvider>
-      <TaskLists />
+      <TaskLists initialTaskLists={mockTaskLists} />
     </TaskListProvider>
   );
 
@@ -49,7 +49,11 @@ describe("TaskLists", () => {
     mockService.getTaskLists.mockImplementationOnce(
       () => new Promise(() => {})
     );
-    renderComponent();
+    render(
+      <TaskListProvider>
+        <TaskLists />
+      </TaskListProvider>
+    );
     expect(screen.getByText("Loading...")).toBeInTheDocument();
   });
 
