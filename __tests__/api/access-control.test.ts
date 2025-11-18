@@ -1,6 +1,6 @@
 
 import { testApiHandler } from 'next-test-api-route-handler';
-import * as listHandler from '@/app/api/todo-lists/route';
+import * as listHandler from '@/app/api/lists/route';
 import * as taskHandler from '@/app/api/todo-lists/[listId]/tasks/route';
 
 // Simulação de alto nível: focada na lógica de negócio e permissões.
@@ -50,6 +50,7 @@ describe('API Access Control & Core Logic', () => {
       test: async ({ fetch }) => {
         const res = await fetch({
           method: 'POST',
+          headers: { 'Cookie': 'session=fake-session-cookie' },
           body: JSON.stringify({ name: list.name }),
         });
         expect(res.status).toBe(201); // Sucesso na criação da lista
@@ -57,9 +58,6 @@ describe('API Access Control & Core Logic', () => {
     });
 
     // Etapa 2: Adicionar uma Tarefa à Lista
-    // Aqui está a correção para o problema original!
-    // A lógica de permissão em `ability.ts` verifica `ownerId` no objeto da lista.
-    // Nossa simulação de `getTodoListById` deve retornar um objeto que satisfaça essa regra.
     mockGetTodoListById.mockResolvedValue(list); 
     mockCreateTask.mockResolvedValue({ id: 'task-123', title: 'New Task' }); // Simula a criação bem-sucedida da tarefa
 
@@ -69,6 +67,7 @@ describe('API Access Control & Core Logic', () => {
       test: async ({ fetch }) => {
         const res = await fetch({
           method: 'POST',
+          headers: { 'Cookie': 'session=fake-session-cookie' },
           body: JSON.stringify({ title: 'New Task' }),
         });
         const json = await res.json();
@@ -83,7 +82,6 @@ describe('API Access Control & Core Logic', () => {
     const user = { uid: 'user-123' }; // Usuário atacante
     const otherUser = { uid: 'user-456' }; // Dono da lista
     const listId = 'list-owned-by-other';
-    // CORREÇÃO: Escapado o apóstrofo em "Other's List"
     const list = { id: listId, name: 'Other\'s List', ownerId: otherUser.uid };
 
     mockVerifySession.mockResolvedValue(user);
@@ -95,6 +93,7 @@ describe('API Access Control & Core Logic', () => {
       test: async ({ fetch }) => {
         const res = await fetch({
           method: 'POST',
+          headers: { 'Cookie': 'session=fake-session-cookie' },
           body: JSON.stringify({ title: 'Malicious Task' }),
         });
         expect(res.status).toBe(403); // Acesso proibido, como esperado

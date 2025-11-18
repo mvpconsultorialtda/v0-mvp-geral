@@ -1,38 +1,23 @@
 
-import React, { ReactElement } from 'react';
-import { render, RenderOptions } from '@testing-library/react';
-// Importe os provedores necessários usando caminhos relativos.
-import { AuthProvider } from '../src/components/providers/auth-provider';
-import { AppProvider } from '../src/providers/AppProvider'; // CORREÇÃO: Importar o AppProvider
+import React from 'react';
+import { render as rtlRender } from '@testing-library/react';
+import { AuthProvider, useAuth } from '../src/components/providers/auth-provider';
 
-const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
-  // Mock para o contexto de autenticação, como antes.
-  const mockAuth = {
-    user: {
-      uid: 'test-user-id',
-      email: 'test@example.com',
-      name: 'Test User',
-    },
-    isAuthenticated: true,
-    isLoading: false,
-    login: async () => {},
-    logout: async () => {},
-    signup: async () => ({ uid: 'test-user-id' }),
-  };
+// Mock the useAuth hook
+jest.mock('../src/components/providers/auth-provider', () => ({
+  ...jest.requireActual('../src/components/providers/auth-provider'),
+  useAuth: jest.fn(),
+}));
 
-  // CORREÇÃO: Envolva o AuthProvider com o AppProvider.
-  // A ordem é importante se um provedor depender do outro.
-  return (
-    <AppProvider>
-      <AuthProvider value={mockAuth}>{children}</AuthProvider>
-    </AppProvider>
+const mockUseAuth = useAuth as jest.Mock;
+
+function render(ui: React.ReactElement, { providerProps, ...renderOptions }: any = {}) {
+  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <AuthProvider {...providerProps}>{children}</AuthProvider>
   );
-};
 
-const customRender = (
-  ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>
-) => render(ui, { wrapper: AllTheProviders, ...options });
+  return rtlRender(ui, { wrapper: Wrapper, ...renderOptions });
+}
 
 export * from '@testing-library/react';
-export { customRender as render };
+export { render, mockUseAuth };
