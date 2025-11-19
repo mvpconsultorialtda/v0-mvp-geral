@@ -1,6 +1,6 @@
 # Repositório Modular de Aplicações Full-Stack
 
-## Visão do Projeto
+## Visão do Projetohttps://github.com/mvpconsultorialtda/v0-mvp-geral/commits/fix-pnpm-lockfile-and-tests
 
 Este repositório não é apenas uma única aplicação, mas sim uma **coleção de módulos de negócio independentes e reutilizáveis**. A arquitetura é projetada com uma filosofia de "Legos", onde cada módulo em `src/modules` representa um "bloco de construção" (uma feature completa e autocontida).
 
