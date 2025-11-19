@@ -75,5 +75,13 @@ service cloud.firestore {
     match /task-lists/{listId} {
       allow read, write: if true;
     }
+    
+    // New collections for Kanban Board
+    match /columns/{document=**} {
+      allow read, write: if true;
+    }
+    match /tasks/{document=**} {
+      allow read, write: if true;
+    }
   }
 }

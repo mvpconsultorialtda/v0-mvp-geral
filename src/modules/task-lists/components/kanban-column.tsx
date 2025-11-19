@@ -1,15 +1,15 @@
 "use client";
 
-import { TaskList, Task } from "../types/task-list";
+import { Task } from "../types/task-list";
 import { FaTrash, FaEdit, FaPlus, FaSave, FaTimes } from "react-icons/fa";
 import { useState } from "react";
 import { KanbanCard } from "./kanban-card";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 
 interface KanbanColumnProps {
-    list: TaskList;
+    list: { id: string; name: string; tasks: Task[] };
     index: number;
-    onUpdateList: (id: string, data: Partial<TaskList>) => void;
+    onUpdateList: (id: string, data: { name?: string }) => void;
     onDeleteList: (id: string) => void;
     onCreateTask: (listId: string, text: string) => void;
     onUpdateTask: (listId: string, taskId: string, data: Partial<Task>) => void;

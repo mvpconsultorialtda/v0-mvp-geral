@@ -5,134 +5,119 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  query,
+  where,
+  orderBy,
+  writeBatch,
   getDoc,
-  arrayUnion,
-  runTransaction,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
-import { TaskList, Task } from "../types/task-list";
+import { KanbanColumn, Task } from "../types/task-list";
 
-const COLLECTION_NAME = "task-lists";
+const COLUMNS_COLLECTION = "columns";
+const TASKS_COLLECTION = "tasks";
 
 export const TaskListService = {
-  getTaskLists: async (): Promise<TaskList[]> => {
+  // --- Columns ---
+
+  getColumns: async (): Promise<KanbanColumn[]> => {
     try {
-      const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
+      const q = query(collection(db, COLUMNS_COLLECTION), orderBy("order", "asc"));
+      const querySnapshot = await getDocs(q);
       return querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-      })) as TaskList[];
+      })) as KanbanColumn[];
     } catch (error) {
-      console.error("Error getting task lists:", error);
+      console.error("Error getting columns:", error);
       throw error;
     }
   },
 
-  getTaskList: async (id: string): Promise<TaskList | null> => {
+  createColumn: async (title: string, order: number): Promise<KanbanColumn> => {
     try {
-      const docRef = doc(db, COLLECTION_NAME, id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as TaskList;
-      }
-      return null;
+      const newColumn = { title, order };
+      const docRef = await addDoc(collection(db, COLUMNS_COLLECTION), newColumn);
+      return { id: docRef.id, ...newColumn };
     } catch (error) {
-      console.error("Error getting task list:", error);
+      console.error("Error creating column:", error);
       throw error;
     }
   },
 
-  createTaskList: async (newListName: string): Promise<TaskList> => {
+  updateColumn: async (id: string, data: Partial<KanbanColumn>): Promise<void> => {
     try {
-      const newList = {
-        name: newListName,
-        tasks: [],
-      };
-      const docRef = await addDoc(collection(db, COLLECTION_NAME), newList);
-      return { id: docRef.id, ...newList };
+      const docRef = doc(db, COLUMNS_COLLECTION, id);
+      const { id: _, ...updateData } = data;
+      await updateDoc(docRef, updateData);
     } catch (error) {
-      console.error("Error creating task list:", error);
+      console.error("Error updating column:", error);
       throw error;
     }
   },
 
-  updateTaskList: async (
-    listId: string,
-    updatedData: Partial<TaskList>
-  ): Promise<void> => {
+  deleteColumn: async (id: string): Promise<void> => {
     try {
-      const docRef = doc(db, COLLECTION_NAME, listId);
-      // Remove id from updatedData if present to avoid overwriting document ID in data
-      const { id, ...dataToUpdate } = updatedData;
-      await updateDoc(docRef, dataToUpdate);
-    } catch (error) {
-      console.error("Error updating task list:", error);
-      throw error;
-    }
-  },
-
-  deleteTaskList: async (listId: string): Promise<void> => {
-    try {
-      const docRef = doc(db, COLLECTION_NAME, listId);
+      // Note: In a real app, we should also delete or move tasks associated with this column
+      // For now, we'll just delete the column
+      const docRef = doc(db, COLUMNS_COLLECTION, id);
       await deleteDoc(docRef);
     } catch (error) {
-      console.error("Error deleting task list:", error);
+      console.error("Error deleting column:", error);
       throw error;
     }
   },
 
-  createTask: async (listId: string, taskText: string): Promise<Task> => {
+  // --- Tasks ---
+
+  getTasks: async (): Promise<Task[]> => {
     try {
-      const newTask: Task = {
-        id: crypto.randomUUID(),
-        text: taskText,
+      const q = query(collection(db, TASKS_COLLECTION), orderBy("order", "asc"));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Task[];
+    } catch (error) {
+      console.error("Error getting tasks:", error);
+      throw error;
+    }
+  },
+
+  createTask: async (columnId: string, text: string, order: number): Promise<Task> => {
+    try {
+      const newTask: Omit<Task, "id"> = {
+        columnId,
+        text,
         completed: false,
+        order,
+        // Default values
+        description: "",
+        priority: "medium",
       };
-      const docRef = doc(db, COLLECTION_NAME, listId);
-      await updateDoc(docRef, {
-        tasks: arrayUnion(newTask),
-      });
-      return newTask;
+      const docRef = await addDoc(collection(db, TASKS_COLLECTION), newTask);
+      return { id: docRef.id, ...newTask };
     } catch (error) {
       console.error("Error creating task:", error);
       throw error;
     }
   },
 
-  updateTask: async (
-    listId: string,
-    taskId: string,
-    updatedData: Partial<Task>
-  ): Promise<void> => {
+  updateTask: async (taskId: string, data: Partial<Task>): Promise<void> => {
     try {
-      const docRef = doc(db, COLLECTION_NAME, listId);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const listData = docSnap.data() as TaskList;
-        const updatedTasks = listData.tasks.map((task) =>
-          task.id === taskId ? { ...task, ...updatedData } : task
-        );
-
-        await updateDoc(docRef, { tasks: updatedTasks });
-      }
+      const docRef = doc(db, TASKS_COLLECTION, taskId);
+      const { id: _, ...updateData } = data;
+      await updateDoc(docRef, updateData);
     } catch (error) {
       console.error("Error updating task:", error);
       throw error;
     }
   },
 
-  deleteTask: async (listId: string, taskId: string): Promise<void> => {
+  deleteTask: async (taskId: string): Promise<void> => {
     try {
-      const docRef = doc(db, COLLECTION_NAME, listId);
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const listData = docSnap.data() as TaskList;
-        const updatedTasks = listData.tasks.filter((task) => task.id !== taskId);
-
-        await updateDoc(docRef, { tasks: updatedTasks });
-      }
+      const docRef = doc(db, TASKS_COLLECTION, taskId);
+      await deleteDoc(docRef);
     } catch (error) {
       console.error("Error deleting task:", error);
       throw error;
@@ -140,63 +125,36 @@ export const TaskListService = {
   },
 
   moveTask: async (
-    sourceListId: string,
-    destListId: string,
     taskId: string,
-    newIndex: number
+    targetColumnId: string,
+    newOrder: number
   ): Promise<void> => {
     try {
-      // If moving within the same list
-      if (sourceListId === destListId) {
-        const listRef = doc(db, COLLECTION_NAME, sourceListId);
-        const listDoc = await getDoc(listRef);
-
-        if (listDoc.exists()) {
-          const listData = listDoc.data() as TaskList;
-          const tasks = [...listData.tasks];
-          const taskIndex = tasks.findIndex((t) => t.id === taskId);
-
-          if (taskIndex === -1) return;
-
-          const [movedTask] = tasks.splice(taskIndex, 1);
-          tasks.splice(newIndex, 0, movedTask);
-
-          await updateDoc(listRef, { tasks });
-        }
-        return;
-      }
-
-      // Moving between different lists (Transaction required for atomicity)
-      await runTransaction(db, async (transaction) => {
-        const sourceListRef = doc(db, COLLECTION_NAME, sourceListId);
-        const destListRef = doc(db, COLLECTION_NAME, destListId);
-
-        const sourceDoc = await transaction.get(sourceListRef);
-        const destDoc = await transaction.get(destListRef);
-
-        if (!sourceDoc.exists() || !destDoc.exists()) {
-          throw new Error("List not found");
-        }
-
-        const sourceData = sourceDoc.data() as TaskList;
-        const destData = destDoc.data() as TaskList;
-
-        const sourceTasks = [...sourceData.tasks];
-        const taskIndex = sourceTasks.findIndex((t) => t.id === taskId);
-
-        if (taskIndex === -1) throw new Error("Task not found in source list");
-
-        const [movedTask] = sourceTasks.splice(taskIndex, 1);
-
-        const destTasks = [...destData.tasks];
-        destTasks.splice(newIndex, 0, movedTask);
-
-        transaction.update(sourceListRef, { tasks: sourceTasks });
-        transaction.update(destListRef, { tasks: destTasks });
+      const docRef = doc(db, TASKS_COLLECTION, taskId);
+      await updateDoc(docRef, {
+        columnId: targetColumnId,
+        order: newOrder,
       });
     } catch (error) {
       console.error("Error moving task:", error);
       throw error;
     }
   },
+
+  // Batch update for reordering multiple tasks (e.g. when dropping in a new position)
+  updateTasksOrder: async (updates: { id: string; order: number; columnId?: string }[]): Promise<void> => {
+    try {
+      const batch = writeBatch(db);
+      updates.forEach(({ id, order, columnId }) => {
+        const docRef = doc(db, TASKS_COLLECTION, id);
+        const data: any = { order };
+        if (columnId) data.columnId = columnId;
+        batch.update(docRef, data);
+      });
+      await batch.commit();
+    } catch (error) {
+      console.error("Error batch updating tasks:", error);
+      throw error;
+    }
+  }
 };

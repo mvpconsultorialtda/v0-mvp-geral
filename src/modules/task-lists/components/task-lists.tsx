@@ -8,12 +8,12 @@ import { KanbanColumn } from "./kanban-column";
 
 export const TaskLists = () => {
   const {
-    taskLists,
+    boardData,
     loading,
     error,
-    createTaskList,
-    updateTaskList,
-    deleteTaskList,
+    createColumn,
+    updateColumn,
+    deleteColumn,
     createTask,
     updateTask,
     deleteTask,
@@ -25,7 +25,7 @@ export const TaskLists = () => {
 
   const handleCreateList = async () => {
     if (newListName.trim()) {
-      await createTaskList(newListName);
+      await createColumn(newListName);
       setNewListName("");
       setIsCreatingList(false);
     }
@@ -43,13 +43,11 @@ export const TaskLists = () => {
       return;
     }
 
-    // Handle Column Dragging (if we implement it later, type === 'column')
-    // For now, we only handle tasks
     if (type === "task") {
       moveTask(
+        draggableId,
         source.droppableId,
         destination.droppableId,
-        draggableId,
         destination.index
       );
     }
@@ -91,18 +89,32 @@ export const TaskLists = () => {
                   ref={provided.innerRef}
                   {...provided.droppableProps}
                 >
-                  {taskLists.map((list, index) => (
-                    <KanbanColumn
-                      key={list.id}
-                      list={list}
-                      index={index}
-                      onUpdateList={updateTaskList}
-                      onDeleteList={deleteTaskList}
-                      onCreateTask={createTask}
-                      onUpdateTask={updateTask}
-                      onDeleteTask={deleteTask}
-                    />
-                  ))}
+                  {boardData.columnOrder.map((columnId, index) => {
+                    const column = boardData.columns[columnId];
+                    // Map KanbanColumn (with tasks) to the props expected by KanbanColumn component
+                    // Note: We need to adapt KanbanColumn component props slightly or map here
+                    // The KanbanColumn component expects 'list' which is TaskList interface
+                    // Our new structure is KanbanColumn interface + tasks array.
+                    // Let's map it to match the expected prop structure for now.
+                    const listProp = {
+                      id: column.id,
+                      name: column.title,
+                      tasks: column.tasks,
+                    };
+
+                    return (
+                      <KanbanColumn
+                        key={column.id}
+                        list={listProp}
+                        index={index}
+                        onUpdateList={(id, data) => updateColumn(id, { title: data.name })}
+                        onDeleteList={deleteColumn}
+                        onCreateTask={createTask}
+                        onUpdateTask={(listId, taskId, data) => updateTask(taskId, data)}
+                        onDeleteTask={(listId, taskId) => deleteTask(taskId)}
+                      />
+                    );
+                  })}
                   {provided.placeholder}
                 </div>
               )}
