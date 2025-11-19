@@ -2,7 +2,10 @@ export interface Task {
   id: string;
   text: string;
   completed: boolean;
-  isEditing?: boolean;
+  description?: string;
+  priority?: "low" | "medium" | "high";
+  dueDate?: string; // ISO date string
+  tags?: string[];
 }
 
 export interface TaskList {

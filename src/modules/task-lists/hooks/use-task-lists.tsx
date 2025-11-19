@@ -158,5 +158,62 @@ export const useTaskList = () => {
     createTask,
     updateTask,
     deleteTask,
+    moveTask: async (sourceListId: string, destListId: string, taskId: string, newIndex: number) => {
+      await mutateTaskLists(
+        async (currentLists) => {
+          await TaskListService.moveTask(sourceListId, destListId, taskId, newIndex);
+
+          // Re-fetch or return calculated state
+          // For simplicity in complex moves, we might just return the result of a fetch or manually calculate
+          // Manual calculation:
+          const newLists = JSON.parse(JSON.stringify(currentLists || [])) as TaskList[];
+
+          const sourceList = newLists.find(l => l.id === sourceListId);
+          const destList = newLists.find(l => l.id === destListId);
+
+          if (!sourceList || !destList) return newLists;
+
+          // Remove from source
+          const taskIndex = sourceList.tasks.findIndex(t => t.id === taskId);
+          if (taskIndex === -1) return newLists;
+          const [movedTask] = sourceList.tasks.splice(taskIndex, 1);
+
+          // Add to dest
+          if (sourceListId === destListId) {
+            sourceList.tasks.splice(newIndex, 0, movedTask);
+          } else {
+            destList.tasks.splice(newIndex, 0, movedTask);
+          }
+
+          return newLists;
+        },
+        {
+          optimisticData: (currentLists) => {
+            const newLists = JSON.parse(JSON.stringify(currentLists || [])) as TaskList[];
+
+            const sourceList = newLists.find(l => l.id === sourceListId);
+            const destList = newLists.find(l => l.id === destListId);
+
+            if (!sourceList || !destList) return newLists;
+
+            // Remove from source
+            const taskIndex = sourceList.tasks.findIndex(t => t.id === taskId);
+            if (taskIndex === -1) return newLists;
+            const [movedTask] = sourceList.tasks.splice(taskIndex, 1);
+
+            // Add to dest
+            if (sourceListId === destListId) {
+              sourceList.tasks.splice(newIndex, 0, movedTask);
+            } else {
+              destList.tasks.splice(newIndex, 0, movedTask);
+            }
+
+            return newLists;
+          },
+          rollbackOnError: true,
+          revalidate: false,
+        }
+      );
+    },
   };
 };

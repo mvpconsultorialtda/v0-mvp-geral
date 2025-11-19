@@ -7,7 +7,7 @@ import {
   doc,
   getDoc,
   arrayUnion,
-  arrayRemove,
+  runTransaction,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import { TaskList, Task } from "../types/task-list";
@@ -135,6 +135,67 @@ export const TaskListService = {
       }
     } catch (error) {
       console.error("Error deleting task:", error);
+      throw error;
+    }
+  },
+
+  moveTask: async (
+    sourceListId: string,
+    destListId: string,
+    taskId: string,
+    newIndex: number
+  ): Promise<void> => {
+    try {
+      // If moving within the same list
+      if (sourceListId === destListId) {
+        const listRef = doc(db, COLLECTION_NAME, sourceListId);
+        const listDoc = await getDoc(listRef);
+
+        if (listDoc.exists()) {
+          const listData = listDoc.data() as TaskList;
+          const tasks = [...listData.tasks];
+          const taskIndex = tasks.findIndex((t) => t.id === taskId);
+
+          if (taskIndex === -1) return;
+
+          const [movedTask] = tasks.splice(taskIndex, 1);
+          tasks.splice(newIndex, 0, movedTask);
+
+          await updateDoc(listRef, { tasks });
+        }
+        return;
+      }
+
+      // Moving between different lists (Transaction required for atomicity)
+      await runTransaction(db, async (transaction) => {
+        const sourceListRef = doc(db, COLLECTION_NAME, sourceListId);
+        const destListRef = doc(db, COLLECTION_NAME, destListId);
+
+        const sourceDoc = await transaction.get(sourceListRef);
+        const destDoc = await transaction.get(destListRef);
+
+        if (!sourceDoc.exists() || !destDoc.exists()) {
+          throw new Error("List not found");
+        }
+
+        const sourceData = sourceDoc.data() as TaskList;
+        const destData = destDoc.data() as TaskList;
+
+        const sourceTasks = [...sourceData.tasks];
+        const taskIndex = sourceTasks.findIndex((t) => t.id === taskId);
+
+        if (taskIndex === -1) throw new Error("Task not found in source list");
+
+        const [movedTask] = sourceTasks.splice(taskIndex, 1);
+
+        const destTasks = [...destData.tasks];
+        destTasks.splice(newIndex, 0, movedTask);
+
+        transaction.update(sourceListRef, { tasks: sourceTasks });
+        transaction.update(destListRef, { tasks: destTasks });
+      });
+    } catch (error) {
+      console.error("Error moving task:", error);
       throw error;
     }
   },

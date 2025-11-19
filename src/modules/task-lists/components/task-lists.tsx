@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useTaskList } from "../hooks/use-task-lists";
-import { FaPlus } from "react-icons/fa";
-import { TaskListCard } from "./task-list-card";
+import { FaPlus, FaTimes } from "react-icons/fa";
+import { useState } from "react";
+import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
+import { KanbanColumn } from "./kanban-column";
 
 export const TaskLists = () => {
   const {
@@ -16,14 +17,41 @@ export const TaskLists = () => {
     createTask,
     updateTask,
     deleteTask,
+    moveTask,
   } = useTaskList();
 
   const [newListName, setNewListName] = useState("");
+  const [isCreatingList, setIsCreatingList] = useState(false);
 
-  const handleCreateTaskList = () => {
-    if (newListName.trim() !== "") {
-      createTaskList(newListName);
+  const handleCreateList = async () => {
+    if (newListName.trim()) {
+      await createTaskList(newListName);
       setNewListName("");
+      setIsCreatingList(false);
+    }
+  };
+
+  const onDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId, type } = result;
+
+    if (!destination) return;
+
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    // Handle Column Dragging (if we implement it later, type === 'column')
+    // For now, we only handle tasks
+    if (type === "task") {
+      moveTask(
+        source.droppableId,
+        destination.droppableId,
+        draggableId,
+        destination.index
+      );
     }
   };
 
@@ -38,59 +66,88 @@ export const TaskLists = () => {
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen text-red-500">
-        Error loading task lists.
+        Failed to load task lists
       </div>
     );
   }
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-gray-800 border-b pb-4">
-          Task Lists
-        </h1>
-
-        <div className="mb-10 bg-white p-6 rounded-xl shadow-sm">
-          <div className="flex items-center gap-4">
-            <input
-              type="text"
-              value={newListName}
-              onChange={(e) => setNewListName(e.target.value)}
-              placeholder="Enter new list name"
-              className="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition outline-none"
-              onKeyDown={(e) => e.key === "Enter" && handleCreateTaskList()}
-            />
-            <button
-              onClick={handleCreateTaskList}
-              disabled={!newListName.trim()}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              <FaPlus />
-              Create List
-            </button>
-          </div>
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="h-screen flex flex-col bg-blue-500 overflow-hidden">
+        {/* Header */}
+        <div className="h-14 bg-blue-600 flex items-center px-4 shadow-md z-10">
+          <h1 className="text-white font-bold text-lg">My Kanban Board</h1>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
-          {taskLists.map((list) => (
-            <TaskListCard
-              key={list.id}
-              list={list}
-              onUpdateList={updateTaskList}
-              onDeleteList={deleteTaskList}
-              onCreateTask={createTask}
-              onUpdateTask={updateTask}
-              onDeleteTask={deleteTask}
-            />
-          ))}
-        </div>
+        {/* Board Area */}
+        <div className="flex-grow overflow-x-auto overflow-y-hidden">
+          <div className="h-full flex items-start p-4 gap-4">
 
-        {taskLists.length === 0 && (
-          <div className="text-center py-20 text-gray-500">
-            <p className="text-xl">No task lists found. Create one to get started!</p>
+            {/* Columns */}
+            <Droppable droppableId="all-columns" direction="horizontal" type="column">
+              {(provided) => (
+                <div
+                  className="flex gap-4 h-full"
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                >
+                  {taskLists.map((list, index) => (
+                    <KanbanColumn
+                      key={list.id}
+                      list={list}
+                      index={index}
+                      onUpdateList={updateTaskList}
+                      onDeleteList={deleteTaskList}
+                      onCreateTask={createTask}
+                      onUpdateTask={updateTask}
+                      onDeleteTask={deleteTask}
+                    />
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+
+            {/* Add List Button */}
+            <div className="w-80 flex-shrink-0">
+              {isCreatingList ? (
+                <div className="bg-gray-100 p-3 rounded-xl shadow-sm">
+                  <input
+                    type="text"
+                    value={newListName}
+                    onChange={(e) => setNewListName(e.target.value)}
+                    placeholder="Enter list title..."
+                    className="w-full p-2 mb-2 border rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    autoFocus
+                    onKeyDown={(e) => e.key === "Enter" && handleCreateList()}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCreateList}
+                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    >
+                      Add List
+                    </button>
+                    <button
+                      onClick={() => setIsCreatingList(false)}
+                      className="text-gray-500 hover:text-gray-700 px-2"
+                    >
+                      <FaTimes />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsCreatingList(true)}
+                  className="w-full bg-white/20 hover:bg-white/30 text-white p-3 rounded-xl flex items-center gap-2 transition-colors text-left font-medium"
+                >
+                  <FaPlus /> Add another list
+                </button>
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
-    </div>
+    </DragDropContext>
   );
 };

@@ -35,6 +35,9 @@ const config: Config = {
       testEnvironment: 'node',
       setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
       testMatch: ['**/__tests__/api/**/*.test.ts'],
+      transform: {
+        '^.+\\.(ts|tsx)$': 'ts-jest',
+      },
       moduleNameMapper,
     },
   ],

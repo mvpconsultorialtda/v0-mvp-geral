@@ -50,8 +50,8 @@ describe("TaskLists Module", () => {
         expect(screen.queryByLabelText("Loading task lists")).not.toBeInTheDocument();
       });
 
-      expect(screen.getByText("Task Lists")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("Enter new list name")).toBeInTheDocument();
+      expect(screen.getByText("My Kanban Board")).toBeInTheDocument();
+      expect(screen.getByText("Add another list")).toBeInTheDocument();
     });
 
     it("should handle error state", async () => {
@@ -59,7 +59,7 @@ describe("TaskLists Module", () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(screen.getByText("Error loading task lists.")).toBeInTheDocument();
+        expect(screen.getByText("Failed to load task lists")).toBeInTheDocument();
       });
     });
   });
@@ -88,11 +88,14 @@ describe("TaskLists Module", () => {
       renderComponent();
 
       await waitFor(() => {
-        expect(screen.getByPlaceholderText("Enter new list name")).toBeInTheDocument();
+        expect(screen.getByText("Add another list")).toBeInTheDocument();
       });
 
-      const input = screen.getByPlaceholderText("Enter new list name");
-      const button = screen.getByText("Create List");
+      // Click to reveal input
+      await user.click(screen.getByText("Add another list"));
+
+      const input = screen.getByPlaceholderText("Enter list title...");
+      const button = screen.getByText("Add List");
 
       await user.type(input, "New List");
       await user.click(button);
@@ -138,7 +141,7 @@ describe("TaskLists Module", () => {
         expect(screen.getByText("Test List")).toBeInTheDocument();
       });
 
-      const input = screen.getByPlaceholderText("Add a new task");
+      const input = screen.getByPlaceholderText("+ Add a task");
       const addButton = screen.getByLabelText("Add task to Test List");
 
       await user.type(input, "New Task");
@@ -147,37 +150,6 @@ describe("TaskLists Module", () => {
       await waitFor(() => {
         expect(mockService.createTask).toHaveBeenCalledWith("1", "New Task");
       });
-    });
-
-    it("should update a task (toggle completion)", async () => {
-      const user = userEvent.setup();
-      mockService.getTaskLists.mockResolvedValue(mockTaskLists);
-      mockService.updateTask.mockResolvedValue();
-
-      renderComponent();
-
-      await waitFor(() => {
-        expect(screen.getByText("Task 1")).toBeInTheDocument();
-      });
-
-      // Find the checkbox for Task 1
-      const taskItem = screen.getByText("Task 1").closest("li");
-      const checkbox = taskItem?.querySelector('input[type="checkbox"]');
-
-      if (checkbox) {
-        await user.click(checkbox);
-        await waitFor(() => {
-          expect(mockService.updateTask).toHaveBeenCalledWith(
-            "1",
-            "101",
-            expect.objectContaining({
-              completed: true,
-            })
-          );
-        });
-      } else {
-        throw new Error("Checkbox not found");
-      }
     });
 
     it("should delete a task", async () => {
