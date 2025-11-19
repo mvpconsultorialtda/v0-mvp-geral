@@ -70,5 +70,10 @@ service cloud.firestore {
       allow read: if isUserAuthenticated();
       allow write: if isUserAuthenticated() && request.auth.uid == userId;
     }
+
+    // Allow public access to task-lists for testing purposes as requested
+    match /task-lists/{listId} {
+      allow read, write: if true;
+    }
   }
 }
