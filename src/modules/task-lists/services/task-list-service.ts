@@ -1,77 +1,102 @@
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  getDoc,
+  arrayUnion,
+  arrayRemove,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase-client";
 import { TaskList, Task } from "../types/task-list";
 
-const mockTaskLists: TaskList[] = [
-  {
-    id: "1",
-    name: "Groceries",
-    tasks: [
-      { id: "101", text: "Buy milk", completed: false },
-      { id: "102", text: "Buy eggs", completed: true },
-    ],
-  },
-  {
-    id: "2",
-    name: "Work",
-    tasks: [
-      { id: "201", text: "Finish report", completed: false },
-      { id: "202", text: "Meeting at 2pm", completed: false },
-    ],
-  },
-];
+const COLLECTION_NAME = "task-lists";
 
 export const TaskListService = {
   getTaskLists: async (): Promise<TaskList[]> => {
-    return new Promise((resolve) =>
-      setTimeout(() => resolve(mockTaskLists), 500)
-    );
+    try {
+      const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as TaskList[];
+    } catch (error) {
+      console.error("Error getting task lists:", error);
+      throw error;
+    }
   },
 
   getTaskList: async (id: string): Promise<TaskList | null> => {
-    const taskList = mockTaskLists.find((list) => list.id === id) || null;
-    return new Promise((resolve) => setTimeout(() => resolve(taskList), 500));
+    try {
+      const docRef = doc(db, COLLECTION_NAME, id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as TaskList;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting task list:", error);
+      throw error;
+    }
   },
 
   createTaskList: async (newListName: string): Promise<TaskList> => {
-    const newList: TaskList = {
-      id: String(mockTaskLists.length + 1),
-      name: newListName,
-      tasks: [],
-    };
-    mockTaskLists.push(newList);
-    return new Promise((resolve) => setTimeout(() => resolve(newList), 500));
+    try {
+      const newList = {
+        name: newListName,
+        tasks: [],
+      };
+      const docRef = await addDoc(collection(db, COLLECTION_NAME), newList);
+      return { id: docRef.id, ...newList };
+    } catch (error) {
+      console.error("Error creating task list:", error);
+      throw error;
+    }
   },
 
   updateTaskList: async (
     listId: string,
     updatedData: Partial<TaskList>
   ): Promise<void> => {
-    const listIndex = mockTaskLists.findIndex((list) => list.id === listId);
-    if (listIndex !== -1) {
-      mockTaskLists[listIndex] = { ...mockTaskLists[listIndex], ...updatedData };
+    try {
+      const docRef = doc(db, COLLECTION_NAME, listId);
+      // Remove id from updatedData if present to avoid overwriting document ID in data
+      const { id, ...dataToUpdate } = updatedData;
+      await updateDoc(docRef, dataToUpdate);
+    } catch (error) {
+      console.error("Error updating task list:", error);
+      throw error;
     }
-    return new Promise((resolve) => setTimeout(resolve, 500));
   },
 
   deleteTaskList: async (listId: string): Promise<void> => {
-    const listIndex = mockTaskLists.findIndex((list) => list.id === listId);
-    if (listIndex !== -1) {
-      mockTaskLists.splice(listIndex, 1);
+    try {
+      const docRef = doc(db, COLLECTION_NAME, listId);
+      await deleteDoc(docRef);
+    } catch (error) {
+      console.error("Error deleting task list:", error);
+      throw error;
     }
-    return new Promise((resolve) => setTimeout(resolve, 500));
   },
 
   createTask: async (listId: string, taskText: string): Promise<Task> => {
-    const list = mockTaskLists.find((list) => list.id === listId);
-    if (list) {
+    try {
       const newTask: Task = {
-        id: String(list.tasks.length + 1),
+        id: crypto.randomUUID(),
         text: taskText,
         completed: false,
       };
-      list.tasks.push(newTask);
-      return new Promise((resolve) => setTimeout(() => resolve(newTask), 500));
+      const docRef = doc(db, COLLECTION_NAME, listId);
+      await updateDoc(docRef, {
+        tasks: arrayUnion(newTask),
+      });
+      return newTask;
+    } catch (error) {
+      console.error("Error creating task:", error);
+      throw error;
     }
-    throw new Error("List not found");
   },
 
   updateTask: async (
@@ -79,24 +104,38 @@ export const TaskListService = {
     taskId: string,
     updatedData: Partial<Task>
   ): Promise<void> => {
-    const list = mockTaskLists.find((list) => list.id === listId);
-    if (list) {
-      const taskIndex = list.tasks.findIndex((task) => task.id === taskId);
-      if (taskIndex !== -1) {
-        list.tasks[taskIndex] = { ...list.tasks[taskIndex], ...updatedData };
+    try {
+      const docRef = doc(db, COLLECTION_NAME, listId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const listData = docSnap.data() as TaskList;
+        const updatedTasks = listData.tasks.map((task) =>
+          task.id === taskId ? { ...task, ...updatedData } : task
+        );
+
+        await updateDoc(docRef, { tasks: updatedTasks });
       }
+    } catch (error) {
+      console.error("Error updating task:", error);
+      throw error;
     }
-    return new Promise((resolve) => setTimeout(resolve, 500));
   },
 
   deleteTask: async (listId: string, taskId: string): Promise<void> => {
-    const list = mockTaskLists.find((list) => list.id === listId);
-    if (list) {
-      const taskIndex = list.tasks.findIndex((task) => task.id === taskId);
-      if (taskIndex !== -1) {
-        list.tasks.splice(taskIndex, 1);
+    try {
+      const docRef = doc(db, COLLECTION_NAME, listId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const listData = docSnap.data() as TaskList;
+        const updatedTasks = listData.tasks.filter((task) => task.id !== taskId);
+
+        await updateDoc(docRef, { tasks: updatedTasks });
       }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      throw error;
     }
-    return new Promise((resolve) => setTimeout(resolve, 500));
   },
 };
