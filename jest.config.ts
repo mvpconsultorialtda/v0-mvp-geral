@@ -18,13 +18,16 @@ const config: Config = {
     {
       displayName: 'client',
       testEnvironment: 'jsdom',
-      setupFilesAfterEnv: ['<rootDir>/jest.client.setup.ts'],
+      setupFilesAfterEnv: ['<rootDir>/jest.client.setup.js'],
       testMatch: [
         '**/__tests__/pages/**/*.test.tsx',
         '**/__tests__/components/**/*.test.tsx',
         '**/__tests__/test-utils.test.tsx',
         '**/__tests__/modules/**/*.test.tsx'
       ],
+      transform: {
+        '^.+\\.(ts|tsx)$': 'ts-jest',
+      },
       moduleNameMapper,
     },
     {

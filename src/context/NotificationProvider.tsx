@@ -2,7 +2,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-import { Toast, ToastType } from '@/components/ui/Toast';
+import { Toast, ToastType } from '@/components/ui/simple-toast';
 
 interface ToastMessage {
   id: number;
