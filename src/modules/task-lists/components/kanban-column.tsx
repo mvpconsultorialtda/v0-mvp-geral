@@ -14,6 +14,7 @@ interface KanbanColumnProps {
     onCreateTask: (listId: string, text: string) => void;
     onUpdateTask: (listId: string, taskId: string, data: Partial<Task>) => void;
     onDeleteTask: (listId: string, taskId: string) => void;
+    onTaskClick: (task: Task) => void;
 }
 
 export const KanbanColumn = ({
@@ -24,6 +25,7 @@ export const KanbanColumn = ({
     onCreateTask,
     onUpdateTask,
     onDeleteTask,
+    onTaskClick,
 }: KanbanColumnProps) => {
     const [isEditingList, setIsEditingList] = useState(false);
     const [editListName, setEditListName] = useState(list.name);
@@ -125,6 +127,7 @@ export const KanbanColumn = ({
                                                 onUpdateTask(list.id, task.id, updatedTask)
                                             }
                                             onDelete={(taskId) => onDeleteTask(list.id, taskId)}
+                                            onClick={onTaskClick}
                                         />
                                     ))}
                                     {provided.placeholder}

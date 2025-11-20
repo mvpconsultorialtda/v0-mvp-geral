@@ -132,4 +132,35 @@ describe('TaskLists Component (Kanban Board)', () => {
 
     expect(mockDeleteTask).toHaveBeenCalledWith('task-1');
   });
+
+  it('opens task details modal on click and saves changes', async () => {
+    const mockData = {
+      columns: {
+        'col-1': { id: 'col-1', title: 'To Do', order: 0, tasks: [{ id: 'task-1', columnId: 'col-1', text: 'Task 1', completed: false, order: 0 }] }
+      },
+      columnOrder: ['col-1']
+    };
+    mockUseTaskList.mockReturnValue({ ...defaultHookReturn, boardData: mockData });
+
+    const user = userEvent.setup();
+    render(<TaskLists />);
+
+    // Click the task card
+    const taskCard = screen.getByText('Task 1');
+    await user.click(taskCard);
+
+    // Check if modal opened
+    expect(screen.getByText('Task Details')).toBeInTheDocument();
+
+    // Edit description
+    const descInput = screen.getByPlaceholderText('Add a more detailed description...');
+    await user.type(descInput, 'New Description');
+
+    // Save
+    await user.click(screen.getByText('Save Changes'));
+
+    expect(mockUpdateTask).toHaveBeenCalledWith('task-1', expect.objectContaining({
+      description: 'New Description'
+    }));
+  });
 });

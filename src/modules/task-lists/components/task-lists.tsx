@@ -1,10 +1,15 @@
 "use client";
 
+"use client";
+
 import { useTaskList } from "../hooks/use-task-lists";
 import { FaPlus, FaTimes } from "react-icons/fa";
 import { useState } from "react";
 import { DragDropContext, Droppable, DropResult } from "@hello-pangea/dnd";
 import { KanbanColumn } from "./kanban-column";
+
+import { TaskDetailsModal } from "./task-details-modal";
+import { Task } from "../types/task-list";
 
 export const TaskLists = () => {
   const {
@@ -22,6 +27,7 @@ export const TaskLists = () => {
 
   const [newListName, setNewListName] = useState("");
   const [isCreatingList, setIsCreatingList] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const handleCreateList = async () => {
     if (newListName.trim()) {
@@ -112,6 +118,7 @@ export const TaskLists = () => {
                         onCreateTask={createTask}
                         onUpdateTask={(listId, taskId, data) => updateTask(taskId, data)}
                         onDeleteTask={(listId, taskId) => deleteTask(taskId)}
+                        onTaskClick={setSelectedTask}
                       />
                     );
                   })}
@@ -159,6 +166,16 @@ export const TaskLists = () => {
             </div>
           </div>
         </div>
+
+        {/* Task Details Modal */}
+        {selectedTask && (
+          <TaskDetailsModal
+            isOpen={!!selectedTask}
+            onClose={() => setSelectedTask(null)}
+            task={selectedTask}
+            onUpdate={(updatedData) => updateTask(selectedTask.id, updatedData)}
+          />
+        )}
       </div>
     </DragDropContext>
   );
