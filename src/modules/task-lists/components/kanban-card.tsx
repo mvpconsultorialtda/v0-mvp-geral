@@ -1,7 +1,7 @@
 "use client";
 
 import { Task } from "../types/task-list";
-import { FaTrash, FaClock } from "react-icons/fa";
+import { FaTrash, FaClock, FaCheckSquare } from "react-icons/fa";
 import { Draggable } from "@hello-pangea/dnd";
 
 interface KanbanCardProps {
@@ -47,12 +47,12 @@ export const KanbanCard = ({
                     </div>
 
                     {/* Metadata Badges */}
-                    {(task.priority || task.dueDate) && (
-                        <div className="mt-2 flex gap-2 flex-wrap">
+                    {(task.priority || task.dueDate || (task.subtasks && task.subtasks.length > 0)) && (
+                        <div className="mt-2 flex gap-2 flex-wrap items-center">
                             {task.priority && (
                                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider ${task.priority === 'high' ? 'bg-red-100 text-red-700' :
-                                        task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                            'bg-green-100 text-green-700'
+                                    task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                        'bg-green-100 text-green-700'
                                     }`}>
                                     {task.priority}
                                 </span>
@@ -61,6 +61,12 @@ export const KanbanCard = ({
                                 <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded flex items-center gap-1">
                                     <FaClock size={10} />
                                     {new Date(task.dueDate).toLocaleDateString()}
+                                </span>
+                            )}
+                            {task.subtasks && task.subtasks.length > 0 && (
+                                <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded flex items-center gap-1 font-medium">
+                                    <FaCheckSquare size={10} />
+                                    {task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}
                                 </span>
                             )}
                         </div>

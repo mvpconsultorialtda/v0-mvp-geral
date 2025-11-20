@@ -1,4 +1,5 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { TaskLists } from "@/modules/task-lists/components/task-lists";
 import { useTaskList } from "@/modules/task-lists/hooks/use-task-lists";
 import { Task, KanbanColumn } from "@/modules/task-lists/types/task-list";
@@ -6,6 +7,30 @@ import { Workspace, Board } from "@/modules/task-lists/types/workspace";
 
 // Mock the hook
 jest.mock("@/modules/task-lists/hooks/use-task-lists");
+
+// Mock dnd
+jest.mock("@hello-pangea/dnd", () => ({
+  DragDropContext: ({ children }: any) => children,
+  Droppable: ({ children }: any) => children({
+    draggableProps: {},
+    innerRef: jest.fn(),
+    placeholder: null,
+  }, {}),
+  Draggable: ({ children }: any) => children({
+    draggableProps: {},
+    dragHandleProps: {},
+    innerRef: jest.fn(),
+  }, {
+    isDragging: false,
+  }),
+}));
+
+// Mock crypto.randomUUID
+Object.defineProperty(global, 'crypto', {
+  value: {
+    randomUUID: () => 'test-uuid'
+  }
+});
 
 const mockUseTaskList = useTaskList as jest.Mock;
 
@@ -68,21 +93,21 @@ describe("TaskLists (Kanban Board with Hierarchy)", () => {
 
   it("renders the sidebar with workspaces and boards", () => {
     render(<TaskLists />);
-    expect(screen.getByText("My Workspace")).toBeInTheDocument();
-    expect(screen.getByText("Project Alpha")).toBeInTheDocument();
+    expect(within(screen.getByTestId("sidebar")).getByText("My Workspace")).toBeInTheDocument();
+    expect(within(screen.getByTestId("sidebar")).getByText("Project Alpha")).toBeInTheDocument();
   });
 
   it("renders the selected board name in header", async () => {
     render(<TaskLists />);
-    fireEvent.click(screen.getByText("Project Alpha"));
+    fireEvent.click(within(screen.getByTestId("sidebar")).getByText("Project Alpha"));
     await waitFor(() => {
-      expect(screen.getByRole("heading", { level: 1, name: "Project Alpha" })).toBeInTheDocument();
+      expect(within(screen.getByTestId("board-header")).getByRole("heading", { level: 1, name: "Project Alpha" })).toBeInTheDocument();
     });
   });
 
   it("renders columns and tasks for the selected board", async () => {
     render(<TaskLists />);
-    fireEvent.click(screen.getByText("Project Alpha"));
+    fireEvent.click(within(screen.getByTestId("sidebar")).getByText("Project Alpha"));
 
     await waitFor(() => {
       expect(screen.getByText("To Do")).toBeInTheDocument();
@@ -94,7 +119,7 @@ describe("TaskLists (Kanban Board with Hierarchy)", () => {
 
   it("calls createColumn when adding a new column (list)", async () => {
     render(<TaskLists />);
-    fireEvent.click(screen.getByText("Project Alpha"));
+    fireEvent.click(within(screen.getByTestId("sidebar")).getByText("Project Alpha"));
 
     // Click "Add another column"
     await waitFor(() => screen.getByText("Add another column"));
@@ -111,7 +136,7 @@ describe("TaskLists (Kanban Board with Hierarchy)", () => {
 
   it("calls createTask when adding a new task", async () => {
     render(<TaskLists />);
-    fireEvent.click(screen.getByText("Project Alpha"));
+    fireEvent.click(within(screen.getByTestId("sidebar")).getByText("Project Alpha"));
 
     await waitFor(() => screen.getByText("To Do"));
 
@@ -132,12 +157,28 @@ describe("TaskLists (Kanban Board with Hierarchy)", () => {
 
   it("opens task details modal on task click", async () => {
     render(<TaskLists />);
-    fireEvent.click(screen.getByText("Project Alpha"));
+    fireEvent.click(within(screen.getByTestId("sidebar")).getByText("Project Alpha"));
 
     await waitFor(() => screen.getByText("Task 1"));
 
     fireEvent.click(screen.getByText("Task 1"));
     expect(screen.getByText("Task Details")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Task 1")).toBeInTheDocument();
+  });
+
+  it("switches to list view", async () => {
+    render(<TaskLists />);
+    fireEvent.click(within(screen.getByTestId("sidebar")).getByText("Project Alpha"));
+    await waitFor(() => screen.getByText("To Do"));
+
+    // Switch to list view
+    const listViewButton = screen.getByLabelText("List view");
+    fireEvent.click(listViewButton);
+
+    // Check if table headers are present
+    // Check if table headers are present (multiple tables, one per column)
+    expect(screen.getAllByRole("columnheader", { name: "Priority" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Due Date").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Subtasks").length).toBeGreaterThan(0);
   });
 });

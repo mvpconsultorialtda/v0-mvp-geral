@@ -1,3 +1,9 @@
+export interface Subtask {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   columnId: string; // Foreign key to KanbanColumn
@@ -7,6 +13,7 @@ export interface Task {
   priority?: "low" | "medium" | "high";
   dueDate?: string; // ISO date string
   tags?: string[];
+  subtasks?: Subtask[];
   order: number; // For sorting within the column
 }
 

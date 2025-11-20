@@ -23,6 +23,8 @@ export const TaskDetailsModal = ({
         task.priority || "medium"
     );
     const [dueDate, setDueDate] = useState(task.dueDate || "");
+    const [subtasks, setSubtasks] = useState(task.subtasks || []);
+    const [newSubtaskText, setNewSubtaskText] = useState("");
 
     // Reset state when task changes
     useEffect(() => {
@@ -30,9 +32,34 @@ export const TaskDetailsModal = ({
         setDescription(task.description || "");
         setPriority(task.priority || "medium");
         setDueDate(task.dueDate || "");
+        setSubtasks(task.subtasks || []);
     }, [task]);
 
     if (!isOpen) return null;
+
+    const addSubtask = () => {
+        if (newSubtaskText.trim()) {
+            const newSubtask = {
+                id: crypto.randomUUID(),
+                text: newSubtaskText,
+                completed: false,
+            };
+            setSubtasks([...subtasks, newSubtask]);
+            setNewSubtaskText("");
+        }
+    };
+
+    const toggleSubtask = (id: string) => {
+        setSubtasks(
+            subtasks.map((s) =>
+                s.id === id ? { ...s, completed: !s.completed } : s
+            )
+        );
+    };
+
+    const deleteSubtask = (id: string) => {
+        setSubtasks(subtasks.filter((s) => s.id !== id));
+    };
 
     const handleSave = () => {
         onUpdate({
@@ -40,6 +67,7 @@ export const TaskDetailsModal = ({
             description,
             priority,
             dueDate,
+            subtasks,
         });
         onClose();
     };
@@ -117,6 +145,51 @@ export const TaskDetailsModal = ({
                                 onChange={(e) => setDueDate(e.target.value)}
                                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                             />
+                        </div>
+                    </div>
+
+                    {/* Subtasks */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Subtasks
+                        </label>
+                        <div className="space-y-2 mb-2">
+                            {subtasks.map((subtask) => (
+                                <div key={subtask.id} className="flex items-center gap-2 group">
+                                    <input
+                                        type="checkbox"
+                                        checked={subtask.completed}
+                                        onChange={() => toggleSubtask(subtask.id)}
+                                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                    />
+                                    <span className={`flex-grow text-sm ${subtask.completed ? "line-through text-gray-400" : "text-gray-700"}`}>
+                                        {subtask.text}
+                                    </span>
+                                    <button
+                                        onClick={() => deleteSubtask(subtask.id)}
+                                        className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        aria-label="Delete subtask"
+                                    >
+                                        <FaTimes size={12} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={newSubtaskText}
+                                onChange={(e) => setNewSubtaskText(e.target.value)}
+                                onKeyDown={(e) => e.key === "Enter" && addSubtask()}
+                                placeholder="Add a subtask..."
+                                className="flex-grow p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                            />
+                            <button
+                                onClick={addSubtask}
+                                className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 text-sm font-medium"
+                            >
+                                Add
+                            </button>
                         </div>
                     </div>
                 </div>

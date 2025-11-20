@@ -51,7 +51,7 @@ export const Sidebar = ({
     };
 
     return (
-        <div className="w-64 bg-gray-900 text-white h-screen flex flex-col border-r border-gray-800">
+        <div className="w-64 bg-gray-900 text-white h-screen flex flex-col border-r border-gray-800" data-testid="sidebar">
             <div className="p-4 border-b border-gray-800 flex justify-between items-center">
                 <h2 className="font-bold text-lg flex items-center gap-2">
                     <FaLayerGroup className="text-blue-500" /> Workspaces
