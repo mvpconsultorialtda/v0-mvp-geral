@@ -12,6 +12,7 @@ export interface Task {
 
 export interface KanbanColumn {
   id: string;
+  boardId: string;
   title: string;
   order: number;
 }

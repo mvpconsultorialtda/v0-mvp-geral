@@ -1,139 +1,189 @@
 import {
   collection,
-  getDocs,
   addDoc,
   updateDoc,
   deleteDoc,
   doc,
   query,
   where,
+  getDocs,
   orderBy,
   writeBatch,
-  getDoc,
+  runTransaction,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
-import { KanbanColumn, Task } from "../types/task-list";
+import { Task, KanbanColumn } from "../types/task-list";
+import { Workspace, Board } from "../types/workspace";
 
+const WORKSPACES_COLLECTION = "workspaces";
+const BOARDS_COLLECTION = "boards";
 const COLUMNS_COLLECTION = "columns";
 const TASKS_COLLECTION = "tasks";
 
 export const TaskListService = {
+  // --- Workspaces ---
+  async getWorkspaces(userId: string): Promise<Workspace[]> {
+    const q = query(collection(db, WORKSPACES_COLLECTION), orderBy("createdAt", "asc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Workspace));
+  },
+
+  async createWorkspace(name: string, ownerId: string = "demo-user"): Promise<Workspace> {
+    const docRef = await addDoc(collection(db, WORKSPACES_COLLECTION), {
+      name,
+      ownerId,
+      createdAt: serverTimestamp(),
+    });
+    return { id: docRef.id, name, ownerId, createdAt: new Date().toISOString() };
+  },
+
+  async deleteWorkspace(workspaceId: string): Promise<void> {
+    await deleteDoc(doc(db, WORKSPACES_COLLECTION, workspaceId));
+  },
+
+  // --- Boards (Lists) ---
+  async getBoards(workspaceId: string): Promise<Board[]> {
+    const q = query(
+      collection(db, BOARDS_COLLECTION),
+      where("workspaceId", "==", workspaceId),
+      orderBy("createdAt", "asc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Board));
+  },
+
+  async createBoard(workspaceId: string, name: string): Promise<Board> {
+    const docRef = await addDoc(collection(db, BOARDS_COLLECTION), {
+      workspaceId,
+      name,
+      createdAt: serverTimestamp(),
+    });
+    return { id: docRef.id, workspaceId, name, createdAt: new Date().toISOString() };
+  },
+
+  async deleteBoard(boardId: string): Promise<void> {
+    await deleteDoc(doc(db, BOARDS_COLLECTION, boardId));
+  },
+
   // --- Columns ---
-
-  getColumns: async (): Promise<KanbanColumn[]> => {
-    try {
-      const q = query(collection(db, COLUMNS_COLLECTION), orderBy("order", "asc"));
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as KanbanColumn[];
-    } catch (error) {
-      console.error("Error getting columns:", error);
-      throw error;
-    }
+  async getColumns(boardId: string): Promise<KanbanColumn[]> {
+    const q = query(
+      collection(db, COLUMNS_COLLECTION),
+      where("boardId", "==", boardId),
+      orderBy("order", "asc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as KanbanColumn));
   },
 
-  createColumn: async (title: string, order: number): Promise<KanbanColumn> => {
-    try {
-      const newColumn = { title, order };
-      const docRef = await addDoc(collection(db, COLUMNS_COLLECTION), newColumn);
-      return { id: docRef.id, ...newColumn };
-    } catch (error) {
-      console.error("Error creating column:", error);
-      throw error;
-    }
+  async createColumn(boardId: string, title: string): Promise<KanbanColumn> {
+    const q = query(collection(db, COLUMNS_COLLECTION), where("boardId", "==", boardId));
+    const snapshot = await getDocs(q);
+    const order = snapshot.size;
+
+    const docRef = await addDoc(collection(db, COLUMNS_COLLECTION), {
+      boardId,
+      title,
+      order,
+    });
+    return { id: docRef.id, boardId, title, order };
   },
 
-  updateColumn: async (id: string, data: Partial<KanbanColumn>): Promise<void> => {
-    try {
-      const docRef = doc(db, COLUMNS_COLLECTION, id);
-      const { id: _, ...updateData } = data;
-      await updateDoc(docRef, updateData);
-    } catch (error) {
-      console.error("Error updating column:", error);
-      throw error;
-    }
+  async updateColumn(columnId: string, data: Partial<KanbanColumn>): Promise<void> {
+    await updateDoc(doc(db, COLUMNS_COLLECTION, columnId), data);
   },
 
-  deleteColumn: async (id: string): Promise<void> => {
-    try {
-      // Note: In a real app, we should also delete or move tasks associated with this column
-      // For now, we'll just delete the column
-      const docRef = doc(db, COLUMNS_COLLECTION, id);
-      await deleteDoc(docRef);
-    } catch (error) {
-      console.error("Error deleting column:", error);
-      throw error;
-    }
+  async deleteColumn(columnId: string): Promise<void> {
+    await deleteDoc(doc(db, COLUMNS_COLLECTION, columnId));
   },
 
   // --- Tasks ---
+  async getTasks(columnIds: string[]): Promise<Task[]> {
+    if (columnIds.length === 0) return [];
 
-  getTasks: async (): Promise<Task[]> => {
-    try {
-      const q = query(collection(db, TASKS_COLLECTION), orderBy("order", "asc"));
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Task[];
-    } catch (error) {
-      console.error("Error getting tasks:", error);
-      throw error;
+    const tasks: Task[] = [];
+    const chunks = [];
+    for (let i = 0; i < columnIds.length; i += 10) {
+      chunks.push(columnIds.slice(i, i + 10));
     }
+
+    for (const chunk of chunks) {
+      const q = query(collection(db, TASKS_COLLECTION), where("columnId", "in", chunk));
+      const snapshot = await getDocs(q);
+      snapshot.docs.forEach(doc => tasks.push({ id: doc.id, ...doc.data() } as Task));
+    }
+
+    return tasks.sort((a, b) => a.order - b.order);
   },
 
-  createTask: async (columnId: string, text: string, order: number): Promise<Task> => {
-    try {
-      const newTask: Omit<Task, "id"> = {
-        columnId,
-        text,
-        completed: false,
-        order,
-        // Default values
-        description: "",
-        priority: "medium",
-      };
-      const docRef = await addDoc(collection(db, TASKS_COLLECTION), newTask);
-      return { id: docRef.id, ...newTask };
-    } catch (error) {
-      console.error("Error creating task:", error);
-      throw error;
-    }
+  async createTask(columnId: string, text: string): Promise<Task> {
+    const q = query(collection(db, TASKS_COLLECTION), where("columnId", "==", columnId));
+    const snapshot = await getDocs(q);
+    const order = snapshot.size;
+
+    const newTask: Omit<Task, "id"> = {
+      columnId,
+      text,
+      completed: false,
+      order,
+      createdAt: new Date().toISOString(),
+    };
+
+    const docRef = await addDoc(collection(db, TASKS_COLLECTION), newTask);
+    return { id: docRef.id, ...newTask };
   },
 
-  updateTask: async (taskId: string, data: Partial<Task>): Promise<void> => {
-    try {
-      const docRef = doc(db, TASKS_COLLECTION, taskId);
-      const { id: _, ...updateData } = data;
-      await updateDoc(docRef, updateData);
-    } catch (error) {
-      console.error("Error updating task:", error);
-      throw error;
-    }
+  async updateTask(taskId: string, data: Partial<Task>): Promise<void> {
+    await updateDoc(doc(db, TASKS_COLLECTION, taskId), data);
   },
 
-  deleteTask: async (taskId: string): Promise<void> => {
-    try {
-      const docRef = doc(db, TASKS_COLLECTION, taskId);
-      await deleteDoc(docRef);
-    } catch (error) {
-      console.error("Error deleting task:", error);
-      throw error;
-    }
+  async deleteTask(taskId: string): Promise<void> {
+    await deleteDoc(doc(db, TASKS_COLLECTION, taskId));
   },
 
-  moveTask: async (
+  async moveTask(
     taskId: string,
-    targetColumnId: string,
-    newOrder: number
-  ): Promise<void> => {
+    sourceColumnId: string,
+    destinationColumnId: string,
+    newIndex: number
+  ): Promise<void> {
     try {
-      const docRef = doc(db, TASKS_COLLECTION, taskId);
-      await updateDoc(docRef, {
-        columnId: targetColumnId,
-        order: newOrder,
+      await runTransaction(db, async (transaction) => {
+        const taskRef = doc(db, TASKS_COLLECTION, taskId);
+
+        // Get all tasks in the destination column
+        const destTasksQuery = query(
+          collection(db, TASKS_COLLECTION),
+          where("columnId", "==", destinationColumnId),
+          orderBy("order", "asc")
+        );
+        const destSnapshot = await getDocs(destTasksQuery);
+        let destTasks = destSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task));
+
+        // If moving within same column
+        if (sourceColumnId === destinationColumnId) {
+          const taskIndex = destTasks.findIndex(t => t.id === taskId);
+          if (taskIndex > -1) {
+            const [movedTask] = destTasks.splice(taskIndex, 1);
+            destTasks.splice(newIndex, 0, movedTask);
+          }
+        } else {
+          const taskDoc = await transaction.get(taskRef);
+          if (!taskDoc.exists()) throw "Task does not exist";
+
+          const movedTask = { id: taskId, ...taskDoc.data() } as Task;
+          movedTask.columnId = destinationColumnId;
+          destTasks.splice(newIndex, 0, movedTask);
+
+          transaction.update(taskRef, { columnId: destinationColumnId });
+        }
+
+        // Update orders for all tasks in destination
+        destTasks.forEach((t, index) => {
+          const ref = doc(db, TASKS_COLLECTION, t.id);
+          transaction.update(ref, { order: index });
+        });
       });
     } catch (error) {
       console.error("Error moving task:", error);
@@ -141,20 +191,12 @@ export const TaskListService = {
     }
   },
 
-  // Batch update for reordering multiple tasks (e.g. when dropping in a new position)
-  updateTasksOrder: async (updates: { id: string; order: number; columnId?: string }[]): Promise<void> => {
-    try {
-      const batch = writeBatch(db);
-      updates.forEach(({ id, order, columnId }) => {
-        const docRef = doc(db, TASKS_COLLECTION, id);
-        const data: any = { order };
-        if (columnId) data.columnId = columnId;
-        batch.update(docRef, data);
-      });
-      await batch.commit();
-    } catch (error) {
-      console.error("Error batch updating tasks:", error);
-      throw error;
-    }
-  }
+  async updateTasksOrder(tasks: Task[]): Promise<void> {
+    const batch = writeBatch(db);
+    tasks.forEach((task) => {
+      const ref = doc(db, TASKS_COLLECTION, task.id);
+      batch.update(ref, { order: task.order, columnId: task.columnId });
+    });
+    await batch.commit();
+  },
 };

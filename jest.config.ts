@@ -6,7 +6,7 @@ const createJestConfig = nextJest({ dir: './' });
 
 const moduleNameMapper = {
   '^@/app/(.*)$': '<rootDir>/app/$1',
-  '^@/lib/(.*)$': '<rootDir>/lib/$1',
+  '^@/lib/(.*)$': '<rootDir>/src/lib/$1',
   '^@/components/(.*)$': '<rootDir>/src/components/$1',
   '^@/src/(.*)$': '<rootDir>/src/$1',
   '^@/modules/(.*)$': '<rootDir>/src/modules/$1',

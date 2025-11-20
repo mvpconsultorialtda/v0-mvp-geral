@@ -76,7 +76,13 @@ service cloud.firestore {
       allow read, write: if true;
     }
     
-    // New collections for Kanban Board
+    // New collections for Kanban Board Hierarchy
+    match /workspaces/{document=**} {
+      allow read, write: if true;
+    }
+    match /boards/{document=**} {
+      allow read, write: if true;
+    }
     match /columns/{document=**} {
       allow read, write: if true;
     }
