@@ -46,11 +46,11 @@ export const TaskListService = {
   async getBoards(workspaceId: string): Promise<Board[]> {
     const q = query(
       collection(db, BOARDS_COLLECTION),
-      where("workspaceId", "==", workspaceId),
-      orderBy("createdAt", "asc")
+      where("workspaceId", "==", workspaceId)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Board));
+    const boards = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Board));
+    return boards.sort((a, b) => (a.createdAt || "").localeCompare(b.createdAt || ""));
   },
 
   async createBoard(workspaceId: string, name: string): Promise<Board> {
@@ -70,11 +70,11 @@ export const TaskListService = {
   async getColumns(boardId: string): Promise<KanbanColumn[]> {
     const q = query(
       collection(db, COLUMNS_COLLECTION),
-      where("boardId", "==", boardId),
-      orderBy("order", "asc")
+      where("boardId", "==", boardId)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as KanbanColumn));
+    const columns = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as KanbanColumn));
+    return columns.sort((a, b) => a.order - b.order);
   },
 
   async createColumn(boardId: string, title: string): Promise<KanbanColumn> {
@@ -155,11 +155,12 @@ export const TaskListService = {
         // Get all tasks in the destination column
         const destTasksQuery = query(
           collection(db, TASKS_COLLECTION),
-          where("columnId", "==", destinationColumnId),
-          orderBy("order", "asc")
+          where("columnId", "==", destinationColumnId)
         );
         const destSnapshot = await getDocs(destTasksQuery);
-        let destTasks = destSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Task));
+        let destTasks = destSnapshot.docs
+          .map(d => ({ id: d.id, ...d.data() } as Task))
+          .sort((a, b) => a.order - b.order);
 
         // If moving within same column
         if (sourceColumnId === destinationColumnId) {

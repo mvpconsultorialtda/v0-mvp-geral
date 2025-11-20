@@ -23,7 +23,7 @@ const config: Config = {
         '**/__tests__/pages/**/*.test.tsx',
         '**/__tests__/components/**/*.test.tsx',
         '**/__tests__/test-utils.test.tsx',
-        '**/__tests__/modules/**/*.test.tsx'
+        '**/__tests__/modules/**/*.test.{ts,tsx}'
       ],
       transform: {
         '^.+\\.(ts|tsx)$': 'ts-jest',
